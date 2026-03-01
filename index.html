@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
+    <title>Clash Royale Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* تعديلات بسيطة لدعم اللغة العربية */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .card-cell {
+            text-align: right;
+        }
+        .info-table td:first-child {
+            text-align: right;
+        }
+        .table-progress-text {
+            font-family: 'Inter', sans-serif;
+        }
+        .tooltip-text {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-glow"></div>
+    <div class="container">
+        <h1 class="logo-title"><i class="fa-solid fa-crown" style="color:var(--accent-gold);"></i> <span>Clash Royale Tracker</span></h1>
+        <p style="text-align:center; color:var(--text-muted); margin-top:-20px; margin-bottom:30px; font-size:0.9rem;">تحليلات متقدمة ومستشار تطوير شامل لكلاش رويال</p>
+        
+        <div class="search-box">
+            <input type="text" id="playerTag" placeholder="أدخل وسم اللاعب (مثال: 2RG9P9Y)" list="tagHistory" autocomplete="off">
+            <datalist id="tagHistory"></datalist>
+            <button onclick="startAnalysis()"><i class="fa-solid fa-magnifying-glass"></i> تحليل</button>
+        </div>
+        
+        <div id="statusMessage" class="status-msg"></div>
+
+        <div id="dashboard" class="hidden">
+            <h2 id="playerGreeting" style="text-align: center; margin-bottom: 25px; font-weight: 800; font-size: 1.8rem; letter-spacing: -0.5px;"></h2>
+            
+            <div class="tab-container">
+                <button class="tab-btn active" onclick="openTab('overview')"><i class="fa-solid fa-chart-line"></i> نظرة عامة</button>
+                <button class="tab-btn" onclick="openTab('mainTable')"><i class="fa-solid fa-database"></i> قاعدة البطاقات</button>
+            </div>
+
+            <div id="overview" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="info-box" id="legacyData"></div>
+                    <div class="info-box" id="playerBox"></div>
+                    <div class="info-box" id="financialBox"></div>
+                    <div class="info-box" id="collectionBox"></div>
+                </div>
+
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                    <div class="info-box chart-container"><canvas id="winLossChart"></canvas></div>
+                    <div class="info-box chart-container"><canvas id="goldChart"></canvas></div>
+                    <div class="info-box chart-container"><canvas id="cardsChart"></canvas></div>
+                    <div class="info-box chart-container"><canvas id="xpChart"></canvas></div>
+                </div>
+
+                <h2 class="section-title"><i class="fa-solid fa-layer-group"></i> توزيع المستويات</h2>
+                <p class="section-desc">تصور بياني لتوزيع بطاقاتك حسب المستويات المختلفة.</p>
+                <div class="stats-grid" style="grid-template-columns: 1fr;">
+                    <div class="info-box chart-container" style="height: 250px;"><canvas id="levelChart"></canvas></div>
+                </div>
+
+                <div class="stats-grid" style="grid-template-columns: 1fr;">
+                    <div class="info-box" id="breakdownData"></div>
+                </div>
+
+                <h2 class="section-title"><i class="fa-solid fa-microchip"></i> مركز القيادة</h2>
+                <p class="section-desc">توصيات مبنية على البيانات لتعظيم تقدم حسابك وتحسين تشكيلة معاركك الرئيسية.</p>
+                
+                <div class="stats-grid">
+                    <div class="info-box">
+                        <h3 style="color:var(--accent-blue);"><i class="fa-solid fa-hammer"></i> مُحسّن الحساب</h3>
+                        <div id="strategyData"></div>
+                        <div class="alert-banner">
+                            <strong><i class="fa-solid fa-bullseye"></i> الإجراء الأمثل</strong>
+                            <span id="ladderPlanText" class="green-text" style="font-weight:600;"></span>
+                        </div>
+                    </div>
+
+                    <div class="info-box box-highlight">
+                        <h3 style="color:var(--accent-red);"><i class="fa-solid fa-swords"></i> نخبة تشكيلة المعركة</h3>
+                        <div id="deckData"></div>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="info-box" id="advisorData"></div>
+                    <div class="info-box" id="deckAdvisorData"></div>
+                </div>
+                
+                <div class="stats-grid">
+                     <div class="info-box" id="topUpgradesData"></div>
+                     <div class="info-box">
+                        <h3 style="color:var(--accent-purple);"><i class="fa-solid fa-bolt"></i> بنك الخبرة الفوري</h3>
+                        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">البطاقات الجاهزة للتطوير الآن لكسب نقاط الخبرة فوراً.</p>
+                        <div class="alert-banner instant">
+                            <strong style="justify-content:center;"><i class="fa-solid fa-coins"></i> جاهز للتطوير</strong>
+                            <span id="instantPlanText" class="gold-text" style="font-weight:bold; font-size: 1.1rem; display:block; margin-top:5px;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mainTable" class="tab-content">
+                <div class="filter-container">
+                    <button class="filter-btn active" onclick="filterCards('all')">الكل</button>
+                    <button class="filter-btn" onclick="filterCards('tower')">أبراج</button>
+                    <button class="filter-btn" style="color:var(--accent-gold);" onclick="filterCards('champion')">أبطال</button>
+                    <button class="filter-btn" style="color:#00cec9;" onclick="filterCards('legendary')">أسطورية</button>
+                    <button class="filter-btn" style="color:#9b59b6;" onclick="filterCards('epic')">ملحمية</button>
+                    <button class="filter-btn" style="color:#e67e22;" onclick="filterCards('rare')">نادرة</button>
+                    <button class="filter-btn" style="color:#bdc3c7;" onclick="filterCards('common')">عادية</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="mainDataTable"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
