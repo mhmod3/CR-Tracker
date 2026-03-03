@@ -304,10 +304,10 @@ async function startAnalysis() {
         
         document.getElementById("playerBox").innerHTML = `<h3><i class="fa-solid fa-chart-simple" style="color:var(--accent-purple)"></i> إحصائيات اللاعب</h3>
         <table class="info-table">
-        <tr><td>نقاط النجمة</td><td style="text-align:left;" class="gold-text">${spDisplay}</td></tr>
+        <tr><td>النجوم</td><td style="text-align:left;" class="gold-text">${spDisplay}</td></tr>
         <tr><td>النجوم المنفقة</td><td style="text-align:left;" class="blue-text">${starPointsSpent.toLocaleString()}</td></tr>
-        <tr><td>البطاقات القصوى</td><td style="text-align:left;" class="green-text">${maxedCount} / ${globalResults.length}</td></tr>
-        <tr><td>غير المملوكة</td><td style="text-align:left;" class="red-text">${unownedCount}</td></tr>
+        <tr><td>عدد البطاقات القصوى</td><td style="text-align:left;" class="green-text">${maxedCount} / ${globalResults.length}</td></tr>
+        <tr><td>عدد البطاقات الغير مملوكة</td><td style="text-align:left;" class="red-text">${unownedCount}</td></tr>
         </table>`;
 
         let bdHTML = `<h3><i class="fa-solid fa-chart-pie"></i> توزيع الندرة</h3>
@@ -364,7 +364,7 @@ async function startAnalysis() {
             return b.pctToNext - a.pctToNext;
         });
         
-        let deckHTML = `<table class="info-table"><tr><td>الذهب لتطوير التشكيلة للأقصى</td><td style="text-align:left;" class="red-text">${deckGoldNeeded.toLocaleString()}</td><td style="text-align:left;"></td></tr></table>`;
+        let deckHTML = `<table class="info-table"><tr><td>الذهب المطلوب لتطوير التشكيله للاقصى</td><td style="text-align:left;" class="red-text">${deckGoldNeeded.toLocaleString()}</td><td style="text-align:left;"></td></tr></table>`;
         deckHTML += `<div style="margin-top:15px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">`;
         myDeckCards.forEach(c => {
             let borderColor = c.actualLvl === MAX_LEVEL ? "var(--accent-purple)" : "var(--border-color)";
@@ -551,4 +551,5 @@ function renderMainTable() {
     });
     tableHTML += `</tbody>`;
     document.getElementById("mainDataTable").innerHTML = tableHTML;
+
 }
