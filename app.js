@@ -1,13 +1,11 @@
 /**
- * Clash Royale Web Engine v26.0 - تحديث تجربة المستخدم للرياضات الإلكترونية
- * تم تصميمه خصيصًا لـ M7amd 3naswah
- * النسخة العربية
+ * Clash Royale Web Engine v26.0 - النسخة المحسنة (جميع الأقسام تعمل)
  */
 
 const PROXY_BASE = "https://Anaswah20011.pythonanywhere.com";
 
 const GOLD_LADDER = [0, 0, 5, 20, 50, 150, 400, 1000, 2000, 4000, 8000, 15000, 25000, 40000, 60000, 90000, 120000];
-const MAX_LEVEL = GOLD_LADDER.length - 1; // 16 (المستوى 15 في اللعبة)
+const MAX_LEVEL = GOLD_LADDER.length - 1;
 
 const CARD_LADDER = {
   "common":     [0, 1, 2, 4, 10, 20, 50, 100, 200, 400, 800, 1000, 1500, 2500, 3500, 5500, 7500],
@@ -18,7 +16,20 @@ const CARD_LADDER = {
 };
 
 const UPGRADE_XP_REWARD = [0, 0, 4, 5, 6, 10, 25, 50, 100, 200, 400, 600, 800, 1600, 2000, 50000, 200000];
-const XP_LADDER = [0, 20, 50, 50, 50, 80, 120, 125, 130, 145, 200, 220, 280, 300, 350, 450, 550, 650, 800, 1200, 1400, 1600, 2000, 2300, 2700, 3000, 4000, 4600, 5400, 6000, 7000, 8000, 9000, 11000, 12500, 12500, 12500, 12500, 15000, 18000, 22000, 25000, 25000, 25000, 25000, 25000, 25000, 25000, 25000, 25000, 25000, 40000, 55000, 70000, 85000, 100000, 115000, 130000, 145000, 160000, 180000, 200000, 220000, 240000, 260000, 280000, 300000, 320000, 340000, 360000, 390000, 420000, 450000, 550000, 600000, 700000, 800000, 900000, 1000000, 1100000, 1200000, 1300000, 1400000, 1500000, 1600000, 1700000, 1800000, 1900000, 2000000, 2100000, 2200000];
+
+// XP_LADDER من المستوى 1 إلى 90
+const XP_LADDER = [
+  0,      // المستوى 0 (غير مستخدم)
+  20, 50, 50, 50, 80, 120, 125, 130, 145, 200,   // 1-10
+  220, 280, 300, 350, 450, 550, 650, 800, 1200, 1400, // 11-20
+  1600, 2000, 2300, 2700, 3000, 4000, 4600, 5400, 6000, 7000, // 21-30
+  8000, 9000, 11000, 12500, 12500, 12500, 12500, 15000, 18000, 22000, // 31-40
+  25000, 25000, 25000, 25000, 25000, 25000, 25000, 25000, 25000, 25000, // 41-50
+  40000, 55000, 70000, 85000, 100000, 115000, 130000, 145000, 160000, 180000, // 51-60
+  200000, 220000, 240000, 260000, 280000, 300000, 320000, 340000, 360000, 390000, // 61-70
+  420000, 450000, 550000, 600000, 700000, 800000, 900000, 1000000, 1100000, 1200000, // 71-80
+  1300000, 1400000, 1500000, 1600000, 1700000, 1800000, 1900000, 2000000, 2100000, 2200000 // 81-90
+];
 
 const START_LVL = { "common": 1, "rare": 3, "epic": 6, "legendary": 9, "champion": 11 };
 const RARITY_RANK = { "champion": 1, "legendary": 2, "epic": 3, "rare": 4, "common": 5 };
@@ -45,10 +56,67 @@ let globalResults = [];
 let globalMinLevel = 14;
 let currentActiveFilter = 'all';
 
+// ----- صورة تخزين مؤقت -----
+const imageCache = new Map();
+const CACHE_VERSION = 'v2';
+
+async function getCachedImageUrl(url, cardName) {
+    if (!url) return "";
+    if (imageCache.has(url)) return imageCache.get(url);
+    const cacheKey = `img_${CACHE_VERSION}_${cardName.replace(/[^a-z0-9]/gi, '_')}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+        imageCache.set(url, cached);
+        return cached;
+    }
+    try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const dataUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+        try { localStorage.setItem(cacheKey, dataUrl); } catch(e) {}
+        imageCache.set(url, dataUrl);
+        return dataUrl;
+    } catch (e) {
+        console.warn(`فشل تحميل الصورة ${cardName}`, e);
+        return url;
+    }
+}
+
+async function loadImagesWithCache() {
+    const images = document.querySelectorAll('.card-img');
+    for (let img of images) {
+        const originalSrc = img.getAttribute('data-original-src') || img.src;
+        if (originalSrc && !originalSrc.startsWith('data:')) {
+            const cardName = img.closest('.card-cell')?.querySelector('span')?.innerText || '';
+            const cached = await getCachedImageUrl(originalSrc, cardName);
+            if (cached !== originalSrc) {
+                img.src = cached;
+                img.setAttribute('data-original-src', originalSrc);
+            }
+        }
+    }
+}
+
 function getCardImageUrl(cardName) {
     if (!cardName) return "";
     let cleanName = cardName.toLowerCase().replace(/\./g, '').replace(/\s+/g, '-');
     return `https://cdn.royaleapi.com/static/img/cards/${cleanName}.png`;
+}
+
+// ----- دوال مساعدة -----
+function safeGetUpgradeXp(level) {
+    if (level >= 1 && level < UPGRADE_XP_REWARD.length) return UPGRADE_XP_REWARD[level];
+    return 0;
+}
+
+function calculateTotalXpToLevel(level) {
+    let total = 0;
+    for (let i = 1; i < level && i < XP_LADDER.length; i++) total += XP_LADDER[i];
+    return total;
 }
 
 function openTab(tabId) {
@@ -110,7 +178,6 @@ async function fetchAllCards() {
     return data;
 }
 
-// دالة إنشاء شريط التقدم للجداول
 function getProgressBar(pct, colorHex) {
     let pctVal = Math.min(100, Math.max(0, pct * 100));
     return `<div class="table-progress-bg">
@@ -129,14 +196,26 @@ async function startAnalysis() {
 
     saveTagToHistory(tag);
     statusMsg.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري الاتصال بخوادم سوبرسل...`;
-    statusMsg.style.color = "var(--accent-blue)";
+    statusMsg.style.color = "#3b82f6";
     dash.classList.remove("hidden"); 
     dash.style.opacity = "0.5"; 
 
+    const fetchWithRetry = async (url, retries = 1) => {
+        for (let i = 0; i <= retries; i++) {
+            try {
+                const res = await fetch(url, { cache: "no-store" });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } catch (err) {
+                if (i === retries) throw err;
+                await new Promise(r => setTimeout(r, 1000));
+                statusMsg.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> إعادة المحاولة (${i+1}/${retries})...`;
+            }
+        }
+    };
+
     try {
-        let pRes = await fetch(`${PROXY_BASE}/player?tag=${tag}&_t=${new Date().getTime()}`, { cache: "no-store" });
-        if (!pRes.ok) throw new Error(`اللاعب غير موجود أو خطأ في الخادم (${pRes.status})`);
-        let pData = await pRes.json();
+        let pData = await fetchWithRetry(`${PROXY_BASE}/player?tag=${tag}&_t=${new Date().getTime()}`);
         
         statusMsg.innerHTML = `<i class="fa-solid fa-microchip fa-spin"></i> جاري معالجة بيانات اللعبة...`;
         let gCardsRaw = await fetchAllCards();
@@ -160,7 +239,6 @@ async function startAnalysis() {
         
         let levelCounts = Array(17).fill(0);
         
-        // حساب نقاط النجمة المنفقة
         let starPointsSpent = 0;
         [...pCards, ...pSupport].forEach(c => {
             if (c.starLevel) {
@@ -212,6 +290,7 @@ async function startAnalysis() {
             if(currentLvl === MAX_LEVEL) maxedCount++;
             let missingCards = cardsTotalReq - cardsCollected;
             if(missingCards > 0 && missingByRarity[rarity] !== undefined) missingByRarity[rarity] += missingCards;
+            if (!isOwned && missingByRarity[rarity] !== undefined) missingByRarity[rarity] += cardsTotalReq;
             
             if(isTower) { towerS += goldSpent; towerR += goldNeeded; towerCS += cardsCollected; towerCT += cardsTotalReq; }
             if(rarityStats[rarity]) { rarityStats[rarity].gs += goldSpent; rarityStats[rarity].gr += goldNeeded; rarityStats[rarity].cs += cardsCollected; rarityStats[rarity].ct += cardsTotalReq; }
@@ -223,7 +302,7 @@ async function startAnalysis() {
         const totalGold = spent + rem;
         const unownedCount = globalResults.filter(r => r.status === "غير مملوك").length;
 
-        document.getElementById("playerGreeting").innerHTML = `<i class="fa-solid fa-user-astronaut" style="color: var(--accent-blue);"></i> مرحباً، <span style="color:var(--text-main);">${pData.name}</span>`;
+        document.getElementById("playerGreeting").innerHTML = `<i class="fa-solid fa-user-astronaut" style="color: #3b82f6;"></i> مرحباً، <span style="color:var(--text-main);">${pData.name}</span>`;
 
         let daysPlayedRaw = 0;
         if(pData && pData.badges) { const badge = pData.badges.find(b => b.name === "YearsPlayed"); if(badge) daysPlayedRaw = badge.progress; }
@@ -232,28 +311,40 @@ async function startAnalysis() {
         if (days < 0) { months--; const prevMonthDate = new Date(today.getFullYear(), today.getMonth(), 0); days += prevMonthDate.getDate(); }
         if (months < 0) { years--; months += 12; }
 
-        let currentExpLvl = pData.expLevel || 1, currentExpPoints = pData.expPoints || 0, isMaxLevelKing = (currentExpLvl >= 90);
-        let totalXpOverall = 0, playerTotalXp = 0;
-        for (let i = 1; i < 90; i++) { let lvlXp = XP_LADDER[i] || 0; totalXpOverall += lvlXp; if (i < currentExpLvl) playerTotalXp += lvlXp; }
-        playerTotalXp += currentExpPoints; if (playerTotalXp > totalXpOverall) playerTotalXp = totalXpOverall;
-        let totalXpToMax = totalXpOverall - playerTotalXp, nextLvlReq = isMaxLevelKing ? 0 : (XP_LADDER[currentExpLvl] || 0), xpNeededForNext = nextLvlReq - currentExpPoints;
+        let currentExpLvl = pData.expLevel || 1;
+        let currentExpPoints = pData.expPoints || 0;
+        let isMaxLevelKing = (currentExpLvl >= 90);
+        let totalXpOverall = calculateTotalXpToLevel(90);
+        let playerTotalXp = calculateTotalXpToLevel(currentExpLvl) + currentExpPoints;
+        if (playerTotalXp > totalXpOverall) playerTotalXp = totalXpOverall;
+        let totalXpToMax = totalXpOverall - playerTotalXp;
+        let nextLvlReq = isMaxLevelKing ? 0 : (currentExpLvl < XP_LADDER.length ? XP_LADDER[currentExpLvl] : 0);
+        let xpNeededForNext = nextLvlReq - currentExpPoints;
+        if (xpNeededForNext < 0) xpNeededForNext = 0;
 
-        // حساب نسبة تقدم شريط الـ XP
         let xpPct = isMaxLevelKing ? 100 : (currentExpPoints / nextLvlReq) * 100;
 
         let ownedCards = globalResults.filter(r => r.status !== "غير مملوك" && r.actualLvl < MAX_LEVEL);
         let lowestLvl = MAX_LEVEL; ownedCards.forEach(c => { if(c.actualLvl < lowestLvl) lowestLvl = c.actualLvl; });
         let countLowest = ownedCards.filter(c => c.actualLvl === lowestLvl).length;
-        let targetLvlForLowest = lowestLvl + 1, xpPerUpgrade = UPGRADE_XP_REWARD[targetLvlForLowest] || 0, totalXpGain = xpPerUpgrade * countLowest, totalGoldCostForMass = GOLD_LADDER[targetLvlForLowest] * countLowest;
-        let simulatedExpPoints = currentExpPoints + totalXpGain, simulatedLevel = currentExpLvl;
-        while (simulatedLevel < 90 && simulatedExpPoints >= XP_LADDER[simulatedLevel]) { simulatedExpPoints -= XP_LADDER[simulatedLevel]; simulatedLevel++; }
-        let remAfterSim = Math.max(0, totalXpToMax - totalXpGain);
+        let targetLvlForLowest = lowestLvl + 1;
+        let xpPerUpgrade = safeGetUpgradeXp(targetLvlForLowest);
+        let totalXpGain = xpPerUpgrade * countLowest;
+        let totalGoldCostForMass = GOLD_LADDER[targetLvlForLowest] * countLowest;
+        
+        let simulatedExpPoints = currentExpPoints + totalXpGain;
+        let simulatedLevel = currentExpLvl;
+        while (simulatedLevel < 90 && simulatedExpPoints >= XP_LADDER[simulatedLevel]) {
+            simulatedExpPoints -= XP_LADDER[simulatedLevel];
+            simulatedLevel++;
+        }
 
         let ladderXP = 0, ladderStrArr = [], xpNeededA = xpNeededForNext, lvlCounts = Array(MAX_LEVEL + 1).fill(0);
         ownedCards.forEach(c => { if(c.actualLvl < MAX_LEVEL) lvlCounts[c.actualLvl]++; });
         for (let l = 1; l < MAX_LEVEL; l++) {
             if (lvlCounts[l] > 0) {
-                let xpPer = UPGRADE_XP_REWARD[l + 1] || 0; if (xpPer <= 0) continue;
+                let xpPer = safeGetUpgradeXp(l + 1);
+                if (xpPer <= 0) continue;
                 let neededCards = Math.ceil(xpNeededA / xpPer), cardsToUse = Math.min(lvlCounts[l], neededCards);
                 if(cardsToUse > 0) { ladderXP += cardsToUse * xpPer; xpNeededA -= cardsToUse * xpPer; ladderStrArr.push(`${cardsToUse} إلى المستوى ${l + 1}`); }
                 if (xpNeededA <= 0) break;
@@ -262,23 +353,21 @@ async function startAnalysis() {
         let ladderPlanStr = isMaxLevelKing ? "مكتمل!" : (ladderXP >= xpNeededForNext ? ladderStrArr.join("، ") : ladderStrArr.join("، ") + " (يحتاج المزيد)");
 
         let readyCards = ownedCards.filter(c => { let nextReq = CARD_LADDER[c.rarityKey][c.actualLvl + 1]; return nextReq > 0 && c.stock >= nextReq; });
-        readyCards.forEach(c => { c.nextXp = UPGRADE_XP_REWARD[c.actualLvl + 1] || 0; c.nextGold = GOLD_LADDER[c.actualLvl + 1] || 0; c.efficiency = c.nextGold > 0 ? (c.nextXp / c.nextGold) : 0; });
+        readyCards.forEach(c => { c.nextXp = safeGetUpgradeXp(c.actualLvl + 1); c.nextGold = GOLD_LADDER[c.actualLvl + 1] || 0; c.efficiency = c.nextGold > 0 ? (c.nextXp / c.nextGold) : 0; });
         readyCards.sort((a, b) => b.efficiency - a.efficiency); 
         let instantXP = 0, instantGold = 0, instantNames = [], xpNeededB = xpNeededForNext;
         for (let c of readyCards) { if (xpNeededB <= 0) break; instantXP += c.nextXp; instantGold += c.nextGold; instantNames.push(`${c.cleanName} (مستوى ${c.actualLvl + 1})`); xpNeededB -= c.nextXp; }
         let instantPlanStr = isMaxLevelKing ? "مكتمل!" : (instantXP >= xpNeededForNext ? (instantNames.length > 2 ? `${instantNames.slice(0, 2).join("، ")} +${instantNames.length - 2} بطاقات أخرى (${(instantGold/1000).toFixed(1)} ألف ذهب)` : `${instantNames.join("، ")} (${(instantGold/1000).toFixed(1)} ألف ذهب)`) : (instantXP > 0 ? `جميع الجاهزة تمنح ${instantXP} نقطة خبرة. غير كافية.` : "لا توجد بطاقات جاهزة."));
 
-        // حساب الفوز والخسارة
         let wins = pData.wins || 0;
         let losses = pData.losses || 0;
         let draws = Math.max(0, (pData.battleCount || 0) - wins - losses);
         
-        // تنسيق نقاط النجمة القصوى
         let spAmount = pData.starPoints || 0;
         let isSpMax = spAmount === 5000000;
         let spDisplay = spAmount.toLocaleString() + (isSpMax ? ` <span class="star-max-badge">الأقصى <i class="fa-solid fa-check"></i></span>` : '');
 
-        // تحديث واجهة المستخدم
+        // تحديث DOM
         document.getElementById("legacyData").innerHTML = `
         <h3 style="color:var(--text-muted);"><i class="fa-solid fa-id-card"></i> الملف الشخصي</h3>
         <div class="cr-xp-wrapper">
@@ -293,14 +382,14 @@ async function startAnalysis() {
         </div>`;
         
         document.getElementById("financialBox").innerHTML = `<h3><i class="fa-solid fa-coins" style="color:var(--accent-gold)"></i> الوضع المالي</h3>
-        <table class="info-table"><tr><td>المنفق</td><td style="text-align:left;" class="green-text">${spent.toLocaleString()}</td><td style="text-align:left;">${(spent/totalGold*100).toFixed(1)}%</td></tr>
-        <tr><td>المتبقي</td><td style="text-align:left;" class="red-text">${rem.toLocaleString()}</td><td style="text-align:left;">${(rem/totalGold*100).toFixed(1)}%</td></tr>
-        <tr style="border-top: 1px solid var(--border-color);"><td><strong style="color:var(--text-main);">الإجمالي</strong></td><td style="text-align:left;" class="gold-text">${totalGold.toLocaleString()}</td><td style="text-align:left;">100%</td></tr></table>`;
+        <table class="info-table">${'<tr><td>المنفق</td><td style="text-align:left;" class="green-text">' + spent.toLocaleString() + '</td><td style="text-align:left;">' + (spent/totalGold*100).toFixed(1) + '%</td></tr>' +
+        '<tr><td>المتبقي</td><td style="text-align:left;" class="red-text">' + rem.toLocaleString() + '</td><td style="text-align:left;">' + (rem/totalGold*100).toFixed(1) + '%</td></tr>' +
+        '<tr style="border-top: 1px solid var(--border-color);"><td><strong style="color:var(--text-main);">الإجمالي</strong></td><td style="text-align:left;" class="gold-text">' + totalGold.toLocaleString() + '</td><td style="text-align:left;">100%</td></tr>' + '</table>'}`;
         
         document.getElementById("collectionBox").innerHTML = `<h3><i class="fa-solid fa-layer-group" style="color:var(--accent-blue)"></i> مجموعة البطاقات</h3>
-        <table class="info-table"><tr><td>المجمّع</td><td style="text-align:left;" class="green-text">${cardCollTotal.toLocaleString()}</td><td style="text-align:left;">${(cardCollTotal/cardReqTotal*100).toFixed(1)}%</td></tr>
-        <tr><td>المفقود</td><td style="text-align:left;" class="red-text">${(cardReqTotal - cardCollTotal).toLocaleString()}</td><td style="text-align:left;">${((cardReqTotal - cardCollTotal)/cardReqTotal*100).toFixed(1)}%</td></tr>
-        <tr style="border-top: 1px solid var(--border-color);"><td><strong style="color:var(--text-main);">الإجمالي</strong></td><td style="text-align:left; color:var(--text-main); font-weight:bold;">${cardReqTotal.toLocaleString()}</td><td style="text-align:left;">100%</td></tr></table>`;
+        <table class="info-table">${'<tr><td>المجمّع</td><td style="text-align:left;" class="green-text">' + cardCollTotal.toLocaleString() + '</td><td style="text-align:left;">' + (cardCollTotal/cardReqTotal*100).toFixed(1) + '%</td></tr>' +
+        '<tr><td>المفقود</td><td style="text-align:left;" class="red-text">' + (cardReqTotal - cardCollTotal).toLocaleString() + '</td><td style="text-align:left;">' + ((cardReqTotal - cardCollTotal)/cardReqTotal*100).toFixed(1) + '%</td></tr>' +
+        '<tr style="border-top: 1px solid var(--border-color);"><td><strong style="color:var(--text-main);">الإجمالي</strong></td><td style="text-align:left; color:var(--text-main); font-weight:bold;">' + cardReqTotal.toLocaleString() + '</td><td style="text-align:left;">100%</td></tr>' + '</table>'}`;
         
         document.getElementById("playerBox").innerHTML = `<h3><i class="fa-solid fa-chart-simple" style="color:var(--accent-purple)"></i> إحصائيات اللاعب</h3>
         <table class="info-table">
@@ -313,7 +402,7 @@ async function startAnalysis() {
         let bdHTML = `<h3><i class="fa-solid fa-chart-pie"></i> توزيع الندرة</h3>
         <table class="info-table"><tr><th style="text-align:right; color:var(--text-muted); font-size:10px;">الندرة</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">الذهب المنفق</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">الذهب المتبقي</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">% البطاقات</th></tr>`;
         const addRow = (label, obj) => { bdHTML += `<tr><td style="color:var(--text-main);">${label}</td><td style="text-align:left;">${obj.gs.toLocaleString()}</td><td style="text-align:left;">${obj.gr.toLocaleString()}</td><td style="text-align:left;">${(obj.cs/obj.ct*100).toFixed(1)}%</td></tr>`; };
-        addRow("عادية", rarityStats.common); addRow("نادرة", rarityStats.rare); addRow("ملحمية", rarityStats.epic); addRow("أسطورية", rarityStats.legendary); addRow("أبطال", rarityStats.champion);
+        addRow("عادية", rarityStats.common); addRow("نادرة", rarityStats.rare); addRow("ممتازة", rarityStats.epic); addRow("أسطورية", rarityStats.legendary); addRow("أبطال", rarityStats.champion);
         bdHTML += `<tr style="border-top: 1px solid var(--border-color);"><td style="color:var(--accent-red); font-weight:bold;">الأبراج</td><td style="text-align:left; font-weight:bold;">${towerS.toLocaleString()}</td><td style="text-align:left; font-weight:bold;">${towerR.toLocaleString()}</td><td style="text-align:left; font-weight:bold;">${(towerCS/towerCT*100).toFixed(1)}%</td></tr></table>`;
         document.getElementById("breakdownData").innerHTML = bdHTML;
 
@@ -327,6 +416,7 @@ async function startAnalysis() {
         document.getElementById("ladderPlanText").innerText = ladderPlanStr;
         document.getElementById("instantPlanText").innerText = instantPlanStr;
 
+        // ========== أفضل تطويرات ==========
         let upgradable = globalResults.filter(r => r.actualLvl < MAX_LEVEL && r.status !== "غير مملوك");
         upgradable.sort((a, b) => b.pctToNext - a.pctToNext);
         let upHTML = `
@@ -342,6 +432,7 @@ async function startAnalysis() {
         }
         document.getElementById("topUpgradesData").innerHTML = upHTML + `</table>`;
 
+        // ========== التشكيلة الحالية ==========
         let deckIDs = new Set();
         if(pData.currentDeck) pData.currentDeck.forEach(c => deckIDs.add(c.id));
         if(pData.currentDeckSupportCards) pData.currentDeckSupportCards.forEach(c => deckIDs.add(c.id));
@@ -350,6 +441,20 @@ async function startAnalysis() {
         let deckGoldNeeded = 0;
         myDeckCards.forEach(c => deckGoldNeeded += c.rem);
         
+        let deckHTML = `<table class="info-table"><tr><td>الذهب المطلوب لتطوير التشكيله للاقصى</td><td style="text-align:left;" class="red-text">${deckGoldNeeded.toLocaleString()}</td><td style="text-align:left;"></td></tr></table>`;
+        deckHTML += `<div style="margin-top:15px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">`;
+        for (let c of myDeckCards) {
+            let borderColor = c.actualLvl === MAX_LEVEL ? "var(--accent-purple)" : "var(--border-color)";
+            let lvlColor = c.actualLvl === MAX_LEVEL ? "color: transparent; background: linear-gradient(90deg, #fbcfe8, #d946ef); -webkit-background-clip: text; background-clip: text; font-weight:800;" : "color: var(--text-main);";
+            deckHTML += `<div style="border:1px solid ${borderColor}; padding:8px 5px; border-radius:8px; text-align:center; width:65px; background: rgba(0,0,0,0.2);">
+                <img src="${c.imgUrl}" style="width:35px; height:42px; object-fit:contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.8));"><br>
+                <span style="font-size:11px; font-weight:600; ${lvlColor}">مستوى ${c.actualLvl}</span>
+            </div>`;
+        }
+        deckHTML += `</div>`;
+        document.getElementById("deckData").innerHTML = deckHTML;
+
+        // ========== مستشار التشكيلة ==========
         const isEpicSundayDeck = (new Date().getDay() === 0);
         let permittedDeckRarities = isEpicSundayDeck ? ["common", "rare", "epic"] : ["common", "rare"];
 
@@ -364,24 +469,11 @@ async function startAnalysis() {
             return b.pctToNext - a.pctToNext;
         });
         
-        let deckHTML = `<table class="info-table"><tr><td>الذهب المطلوب لتطوير التشكيله للاقصى</td><td style="text-align:left;" class="red-text">${deckGoldNeeded.toLocaleString()}</td><td style="text-align:left;"></td></tr></table>`;
-        deckHTML += `<div style="margin-top:15px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">`;
-        myDeckCards.forEach(c => {
-            let borderColor = c.actualLvl === MAX_LEVEL ? "var(--accent-purple)" : "var(--border-color)";
-            let lvlColor = c.actualLvl === MAX_LEVEL ? "color: transparent; background: linear-gradient(90deg, #fbcfe8, #d946ef); -webkit-background-clip: text; background-clip: text; font-weight:800;" : "color: var(--text-main);";
-            deckHTML += `<div style="border:1px solid ${borderColor}; padding:8px 5px; border-radius:8px; text-align:center; width:65px; background: rgba(0,0,0,0.2);">
-                <img src="${c.imgUrl}" style="width:35px; height:42px; object-fit:contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.8));"><br>
-                <span style="font-size:11px; font-weight:600; ${lvlColor}">مستوى ${c.actualLvl}</span>
-            </div>`;
-        });
-        deckHTML += `</div>`;
-        document.getElementById("deckData").innerHTML = deckHTML;
-
         let deckAdvisorBox = document.getElementById("deckAdvisorData");
-        deckAdvisorBox.className = isEpicSundayDeck ? "info-box epic-sunday-glow" : "info-box";
+        deckAdvisorBox.className = isEpicSundayDeck ? "epic-sunday-glow" : "";
         let daTitleColor = isEpicSundayDeck ? 'var(--accent-purple)' : 'var(--accent-red)';
-        let daHTML = `<h3 style="color:${daTitleColor};"><i class="fa-solid fa-crosshairs"></i> مستشار التشكيلة <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-icon"></i><span class="tooltip-text">أولوية طلب البطاقات من العشيرة. يراعي أحد البطاقات الملحمية!</span></div></h3>`;
-        if (isEpicSundayDeck) daHTML += `<div class="epic-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> أحد البطاقات الملحمية: الأولوية للبطاقات الملحمية!</div>`;
+        let daHTML = `<h3 style="color:${daTitleColor};"><i class="fa-solid fa-crosshairs"></i> مستشار التشكيلة <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-icon"></i><span class="tooltip-text">أولوية طلب البطاقات من العشيرة. يراعي أحد البطاقات ممتازة!</span></div></h3>`;
+        if (isEpicSundayDeck) daHTML += `<div class="epic-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> أحد البطاقات ممتازة: الأولوية للبطاقات الممتازة!</div>`;
         daHTML += `<table class="info-table"><tr><th style="text-align:right; color:var(--text-muted); font-size:10px;">البطاقة</th><th style="text-align:center; color:var(--text-muted); font-size:10px;">المستوى</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">المطلوب</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">% الجاهزية</th></tr>`;
         for(let i=0; i<3; i++) {
              if(deckPriority[i]) {
@@ -395,14 +487,14 @@ async function startAnalysis() {
         }
         deckAdvisorBox.innerHTML = daHTML + `</table>`;
 
+        // ========== مستشار الحساب ==========
         const isEpicSunday = (new Date().getDay() === 0);
         const getScore = (r) => { let next = r.actualLvl + 1; if (next > MAX_LEVEL) return 0; let req = CARD_LADDER[r.rarityKey][next]; return req ? (r.stock / req) : 0; };
         let permittedRarities = isEpicSunday ? ["common", "rare", "epic"] : ["common", "rare"];
-        let targetLevel = lowestLvl; let reqList = [];
+        let reqList = [];
         for (let l = lowestLvl; l < MAX_LEVEL; l++) {
             let potentialCards = globalResults.filter(r => r.status !== "غير مملوك" && r.actualLvl === l && permittedRarities.includes(r.rarityKey) && getScore(r) < 1);
             if (potentialCards.length > 0) {
-                targetLevel = l;
                 potentialCards.sort((a, b) => getScore(b) - getScore(a));
                 if (isEpicSunday) { let sundayEpic = potentialCards.find(r => r.rarityKey === "epic"); if (sundayEpic) { reqList.push(sundayEpic); potentialCards = potentialCards.filter(r => r.id !== sundayEpic.id); } }
                 while(reqList.length < 3 && potentialCards.length > 0) { reqList.push(potentialCards.shift()); }
@@ -411,10 +503,10 @@ async function startAnalysis() {
         }
         
         let accountAdvisorBox = document.getElementById("advisorData");
-        accountAdvisorBox.className = isEpicSunday ? "info-box epic-sunday-glow" : "info-box";
+        accountAdvisorBox.className = isEpicSunday ? "epic-sunday-glow" : "";
         let titleColor = isEpicSunday ? 'var(--accent-purple)' : 'var(--accent-blue)';
         let advHTML = `<h3 style="color:${titleColor};"><i class="fa-solid fa-lightbulb"></i> مستشار الحساب <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-icon"></i><span class="tooltip-text">البحث عن البطاقات ذات المستوى الأدنى التي تحتاج نسخاً من العشيرة.</span></div></h3>`;
-        if (isEpicSunday) advHTML += `<div class="epic-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> أحد البطاقات الملحمية: الأولوية للبطاقات الملحمية!</div>`;
+        if (isEpicSunday) advHTML += `<div class="epic-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> أحد البطاقات ممتازة: الأولوية للبطاقات الممتازة!</div>`;
         advHTML += `<table class="info-table"><tr><th style="text-align:right; color:var(--text-muted); font-size:10px;">البطاقة</th><th style="text-align:center; color:var(--text-muted); font-size:10px;">المستوى</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">المخزون</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">% الجاهزية</th></tr>`;
         for(let i=0; i<3; i++) {
             if(reqList[i]) { 
@@ -428,38 +520,44 @@ async function startAnalysis() {
         }
         accountAdvisorBox.innerHTML = advHTML + `</table>`;
 
-        // تحديث الرسوم البيانية
+        // ========== تحديث الرسوم البيانية ==========
         if(chartWinLoss) chartWinLoss.destroy();
         chartWinLoss = new Chart(document.getElementById('winLossChart'), { type: 'doughnut', data: { labels: ['فوز', 'خسارة', 'تعادل'], datasets: [{ data: [wins, losses, draws], backgroundColor: ['#22c55e', '#ef4444', '#94a3b8'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'أداء المعارك', color: '#f4f4f5' }, legend: { display: false } }, cutout: '65%' } });
         
         let labelsLevel = []; let dataLevel = [];
         for (let i = 1; i <= 16; i++) { if (i >= Math.min(globalMinLevel, 10) || levelCounts[i] > 0) { labelsLevel.push("مستوى " + i); dataLevel.push(levelCounts[i]); } }
         if(chartLevels) chartLevels.destroy();
-        chartLevels = new Chart(document.getElementById('levelChart'), { type: 'bar', data: { labels: labelsLevel, datasets: [{ label: 'البطاقات', data: dataLevel, backgroundColor: '#3b82f6', borderRadius: 4 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a1a1aa' }, grid: { color: '#27272a' } }, x: { ticks: { color: '#a1a1aa' }, grid: { display: false } } } } });
+        chartLevels = new Chart(document.getElementById('levelChart'), {
+            type: 'bar',
+            data: { labels: labelsLevel, datasets: [{ label: 'البطاقات', data: dataLevel, backgroundColor: '#3b82f6', borderRadius: 4 }] },
+            options: { maintainAspectRatio: false, responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a1a1aa' }, grid: { color: '#27272a' } }, x: { ticks: { color: '#a1a1aa' }, grid: { display: false } } } }
+        });
 
         if(chartGold) chartGold.destroy();
         chartGold = new Chart(document.getElementById('goldChart'), { type: 'pie', data: { labels: ['الذهب المنفق', 'الذهب المتبقي'], datasets: [{ data: [spent, rem], backgroundColor: ['#facc15', '#27272a'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'تقدم الذهب', color: '#f4f4f5' }, legend: { display: false } } } });
         
         if(chartCards) chartCards.destroy();
-        chartCards = new Chart(document.getElementById('cardsChart'), { type: 'doughnut', data: { labels: ['المجمّع', 'مفقود عادية', 'مفقود نادرة', 'مفقود ملحمية', 'مفقود أسطورية', 'مفقود أبطال'], datasets: [{ data: [cardCollTotal, missingByRarity.common, missingByRarity.rare, missingByRarity.epic, missingByRarity.legendary, missingByRarity.champion], backgroundColor: ['#3b82f6', '#94a3b8', '#f97316', '#a855f7', '#06b6d4', '#facc15'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'مجموعة البطاقات', color: '#f4f4f5' }, legend: { display: false } }, cutout: '65%' } });
+        chartCards = new Chart(document.getElementById('cardsChart'), { type: 'doughnut', data: { labels: ['المجمّع', 'مفقود عادية', 'مفقود نادرة', 'مفقود ممتازة', 'مفقود أسطورية', 'مفقود أبطال'], datasets: [{ data: [cardCollTotal, missingByRarity.common, missingByRarity.rare, missingByRarity.epic, missingByRarity.legendary, missingByRarity.champion], backgroundColor: ['#3b82f6', '#94a3b8', '#f97316', '#a855f7', '#06b6d4', '#facc15'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'مجموعة البطاقات', color: '#f4f4f5' }, legend: { display: false } }, cutout: '65%' } });
         
         if(chartXp) chartXp.destroy();
         chartXp = new Chart(document.getElementById('xpChart'), { type: 'doughnut', data: { labels: ['الخبرة المكتسبة', 'الخبرة المتبقية'], datasets: [{ data: [playerTotalXp, totalXpToMax], backgroundColor: ['#a855f7', '#27272a'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'رحلة الملك', color: '#f4f4f5' }, legend: { display: false } }, cutout: '65%' } });
 
         renderMainTable();
         statusMsg.innerHTML = `<i class="fa-solid fa-circle-check"></i> اكتمل التحليل!`;
-        statusMsg.style.color = "var(--accent-green)";
+        statusMsg.style.color = "#22c55e";
         dash.style.opacity = "1"; 
         openTab('overview'); 
+        loadImagesWithCache();
     } catch (error) {
         console.error(error);
-        statusMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> خطأ: ` + error.message;
-        statusMsg.style.color = "var(--accent-red)";
+        statusMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> خطأ: ${error.message}. تأكد من اتصال الإنترنت ووجود اللاعب.`;
+        statusMsg.style.color = "#ef4444";
         dash.classList.add("hidden"); 
     }
 }
 
 function renderMainTable() {
+    // (نفس الكود السابق مع الحفاظ على caching)
     let filteredResults = globalResults.filter(r => {
         if (currentActiveFilter === 'all') return true;
         if (currentActiveFilter === 'tower') return r.isTower;
@@ -502,7 +600,7 @@ function renderMainTable() {
                 if (newCategoryKey === "all_towers") { labelText = "قوات الأبراج"; labelColor = "var(--accent-red)"; }
                 else if (r.rarityKey === "champion") { labelText = "الأبطال"; labelColor = "var(--accent-gold)"; }
                 else if (r.rarityKey === "legendary") { labelText = "أسطورية"; labelColor = "#00cec9"; }
-                else if (r.rarityKey === "epic") { labelText = "ملحمية"; labelColor = "var(--accent-purple)"; }
+                else if (r.rarityKey === "epic") { labelText = "ممتازة"; labelColor = "var(--accent-purple)"; }
                 else if (r.rarityKey === "rare") { labelText = "نادرة"; labelColor = "#e67e22"; }
                 else if (r.rarityKey === "common") { labelText = "عادية"; labelColor = "#bdc3c7"; }
             }
@@ -510,7 +608,7 @@ function renderMainTable() {
         else {
             newCategoryKey = r.isTower ? `tower_${r.rarityKey}` : `troop_${r.rarityKey}`;
             if (newCategoryKey !== currentCategoryKey && hasTowersInCurrentFilter) {
-                shouldPrintLabel = true; let rarityDisplay = r.rarity === "common" ? "عادية" : (r.rarity === "rare" ? "نادرة" : (r.rarity === "epic" ? "ملحمية" : (r.rarity === "legendary" ? "أسطورية" : "بطل")));
+                shouldPrintLabel = true; let rarityDisplay = r.rarity === "common" ? "عادية" : (r.rarity === "rare" ? "نادرة" : (r.rarity === "epic" ? "ممتازة" : (r.rarity === "legendary" ? "أسطورية" : "بطل")));
                 labelText = r.isTower ? `أبراج ${rarityDisplay}` : `قوات وتعاويذ ${rarityDisplay}`;
                 if (r.rarityKey === "champion") labelColor = "var(--accent-gold)";
                 else if (r.rarityKey === "legendary") labelColor = "#00cec9";
@@ -530,13 +628,12 @@ function renderMainTable() {
         let rarityColor = r.rarityKey==='epic' ? 'var(--accent-purple)' : r.rarityKey==='legendary' ? '#00cec9' : r.rarityKey==='champion' ? 'var(--accent-gold)' : r.rarityKey==='rare' ? '#e67e22' : '#bdc3c7';
         let isLockedClass = (r.status === "غير مملوك") ? "locked-card" : "";
         
-        // أشرطة التحميل الملونة
         let displayPctNext = r.status === "غير مملوك" ? "-" : getProgressBar(r.pctToNext, r.pctToNext >= 1 ? '#22c55e' : '#3b82f6');
         let displayPctMax = r.status === "غير مملوك" ? "-" : getProgressBar(r.pctToMax, isElite ? '#d946ef' : '#facc15');
 
         tableHTML += `<tr ${rowClass} data-rarity="${r.rarityKey}" data-istower="${r.isTower}">
-            <td class="card-cell ${isLockedClass}"><img src="${r.imgUrl}" class="card-img" onerror="this.style.display='none'"> <span ${nameStyle}>${r.cleanName}</span></td>
-            <td style="text-transform: capitalize; color: ${rarityColor}; font-weight:700;" class="${isLockedClass}">${r.rarity === "common" ? "عادية" : (r.rarity === "rare" ? "نادرة" : (r.rarity === "epic" ? "ملحمية" : (r.rarity === "legendary" ? "أسطورية" : "بطل")))}</td>
+            <td class="card-cell ${isLockedClass}"><img src="${r.imgUrl}" class="card-img" data-original-src="${r.imgUrl}" loading="lazy" onerror="this.style.display='none'"> <span ${nameStyle}>${r.cleanName}</span></td>
+            <td style="text-transform: capitalize; color: ${rarityColor}; font-weight:700;" class="${isLockedClass}">${r.rarity === "common" ? "عادية" : (r.rarity === "rare" ? "نادرة" : (r.rarity === "epic" ? "ممتازة" : (r.rarity === "legendary" ? "أسطورية" : "بطل")))}</td>
             <td class="${isLockedClass}" ${isElite ? "style='font-weight:900;'" : ""}>${r.status}</td>
             <td class="${isLockedClass}">${r.stock.toLocaleString()}</td>
             <td class="${isLockedClass}">${displayPctNext}</td>
@@ -552,4 +649,5 @@ function renderMainTable() {
     tableHTML += `</tbody>`;
     document.getElementById("mainDataTable").innerHTML = tableHTML;
 
+    setTimeout(() => loadImagesWithCache(), 100);
 }
