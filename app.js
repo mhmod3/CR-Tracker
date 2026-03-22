@@ -1,5 +1,5 @@
 /**
- * Clash Royale Web Engine v26.0 - النسخة المحسنة (جميع الأقسام تعمل)
+ * Clash Royale Web Engine v26.0 - النسخة المحسنة مع الأسماء العربية
  */
 
 const PROXY_BASE = "https://Anaswah20011.pythonanywhere.com";
@@ -17,23 +17,164 @@ const CARD_LADDER = {
 
 const UPGRADE_XP_REWARD = [0, 0, 4, 5, 6, 10, 25, 50, 100, 200, 400, 600, 800, 1600, 2000, 50000, 200000];
 
-// XP_LADDER من المستوى 1 إلى 90
 const XP_LADDER = [
-  0,      // المستوى 0 (غير مستخدم)
-  20, 50, 50, 50, 80, 120, 125, 130, 145, 200,   // 1-10
-  220, 280, 300, 350, 450, 550, 650, 800, 1200, 1400, // 11-20
-  1600, 2000, 2300, 2700, 3000, 4000, 4600, 5400, 6000, 7000, // 21-30
-  8000, 9000, 11000, 12500, 12500, 12500, 12500, 15000, 18000, 22000, // 31-40
-  25000, 25000, 25000, 25000, 25000, 25000, 25000, 25000, 25000, 25000, // 41-50
-  40000, 55000, 70000, 85000, 100000, 115000, 130000, 145000, 160000, 180000, // 51-60
-  200000, 220000, 240000, 260000, 280000, 300000, 320000, 340000, 360000, 390000, // 61-70
-  420000, 450000, 550000, 600000, 700000, 800000, 900000, 1000000, 1100000, 1200000, // 71-80
-  1300000, 1400000, 1500000, 1600000, 1700000, 1800000, 1900000, 2000000, 2100000, 2200000 // 81-90
+  0, 20, 50, 50, 50, 80, 120, 125, 130, 145, 200,
+  220, 280, 300, 350, 450, 550, 650, 800, 1200, 1400,
+  1600, 2000, 2300, 2700, 3000, 4000, 4600, 5400, 6000, 7000,
+  8000, 9000, 11000, 12500, 12500, 12500, 12500, 15000, 18000, 22000,
+  25000, 25000, 25000, 25000, 25000, 25000, 25000, 25000, 25000, 25000,
+  40000, 55000, 70000, 85000, 100000, 115000, 130000, 145000, 160000, 180000,
+  200000, 220000, 240000, 260000, 280000, 300000, 320000, 340000, 360000, 390000,
+  420000, 450000, 550000, 600000, 700000, 800000, 900000, 1000000, 1100000, 1200000,
+  1300000, 1400000, 1500000, 1600000, 1700000, 1800000, 1900000, 2000000, 2100000, 2200000
 ];
 
 const START_LVL = { "common": 1, "rare": 3, "epic": 6, "legendary": 9, "champion": 11 };
 const RARITY_RANK = { "champion": 1, "legendary": 2, "epic": 3, "rare": 4, "common": 5 };
 const CHAMPION_NAMES = ["Skeleton King", "Golden Knight", "Archer Queen", "Mighty Miner", "Monk", "Little Prince", "Goblinstein", "Boss Bandit"];
+
+// ===== خريطة الترجمة العربية للبطاقات =====
+const CARD_NAME_AR = {
+  // القوات العادية
+  "Knight": "الفارس",
+  "Archers": "راميات السهام",
+  "Goblins": "غيلان",
+  "Giant": "العملاق",
+  "P.E.K.K.A": "بيكا",
+  "Minions": "كائنات المينيون",
+  "Balloon": "بالون",
+  "Witch": "ساحرة",
+  "Barbarians": "برابرة",
+  "Golem": "جولم",
+  "Skeletons": "هياكل عظمية",
+  "Valkyrie": "فالكيري",
+  "Skeleton Army": "جيش الهياكل العظمية",
+  "Bomber": "مفجر",
+  "Musketeer": "الفارسة",
+  "Baby Dragon": "التنين الصغير",
+  "Prince": "الأمير",
+  "Wizard": "الساحر",
+  "Mini P.E.K.K.A": "بيكا صغير",
+  "Spear Goblins": "غيلان الرمح",
+  "Giant Skeleton": "هيكل عظمي عملاق",
+  "Hog Rider": "راكب الخنزير",
+  "Minion Horde": "حشد المينيون",
+  "Ice Wizard": "الساحر الجليدي",
+  "Royal Giant": "العملاق الملكي",
+  "Guards": "الحراس",
+  "Princess": "الأميرة",
+  "Dark Prince": "أمير الظلام",
+  "Three Musketeers": "الفارسات الثلاث",
+  "Lava Hound": "كلب الحمم",
+  "Ice Spirit": "الروح الجليدية",
+  "Fire Spirit": "الروح النارية",
+  "Miner": "عامل منجم",
+  "Sparky": "سباركي",
+  "Bowler": "باولر",
+  "Lumberjack": "الحطّاب",
+  "Battle Ram": "مدق المعركة",
+  "Inferno Dragon": "تنين الجحيم",
+  "Ice Golem": "جولم الجليد",
+  "Mega Minion": "مينيون عملاق",
+  "Dart Goblin": "غول نفخ السهام",
+  "Goblin Gang": "عصابة الغيلان",
+  "Electro Wizard": "الساحر الكهربائي",
+  "Elite Barbarians": "البرابرة المميزون",
+  "Hunter": "الصياد",
+  "Executioner": "السياف",
+  "Bandit": "قاطعة الطريق",
+  "Royal Recruits": "المجندون الملكيون",
+  "Night Witch": "ساحرة الليل",
+  "Bats": "خفافيش",
+  "Royal Ghost": "شبح ملكي",
+  "Ram Rider": "راكبة الكباش",
+  "Zappies": "الصواعق الصغيرة",
+  "Rascals": "الأشقياء",
+  "Cannon Cart": "عربة المدفع",
+  "Mega Knight": "الفارس العملاق",
+  "Skeleton Barrel": "برميل الهياكل العظمية",
+  "Flying Machine": "الآلة الطائرة",
+  "Wall Breakers": "مدمرا الجدران",
+  "Royal Hogs": "الخنازير الملكية",
+  "Goblin Giant": "الغول العملاق",
+  "Fisherman": "الصياد",
+  "Magic Archer": "رامي السهام السحري",
+  "Electro Dragon": "التنين الكهربائي",
+  "Firecracker": "رامية المفرقعات",
+  "Mighty Miner": "عامل المنجم العظيم",
+  "Elixir Golem": "جولم الإكسير",
+  "Battle Healer": "المعالجة القتالية",
+  "Skeleton King": "ملك الهياكل العظمية",
+  "Archer Queen": "ملكة رامية السهام",
+  "Golden Knight": "الفارس الذهبي",
+  "Monk": "الناسك",
+  "Skeleton Dragons": "التنانين العظمية",
+  "Mother Witch": "ساحرة الأم",
+  "Electro Spirit": "الروح الكهربائية",
+  "Electro Giant": "العملاق الكهربائي",
+  "Phoenix": "العنقاء",
+  "Little Prince": "الأمير الصغير",
+  "Goblin Demolisher": "الغول المدمر",
+  "Goblin Machine": "آلة الغوبلن",
+  "Suspicious Bush": "الشجيرة المريبة",
+  "Goblinstein": "غوبلنشتاين",
+  "Rune Giant": "عملاق التمائم",
+  "Berserker": "المحاربة البرسركية",
+  "Boss Bandit": "زعيمة قطاع الطرق",
+  // الأبراج
+  "Tower Princess": "أميرة البرج",
+  "Cannoneer": "مدفعي",
+  "Dagger Duchess": "دوقة الخناجر",
+  "Royal Chef": "الطاهي الملكي",
+  // التعاويذ والبناءات
+  "Cannon": "مدفع",
+  "Goblin Hut": "كوخ الغيلان",
+  "Mortar": "مدفع الهاون",
+  "Inferno Tower": "برج الجحيم",
+  "Bomb Tower": "برج القنبلة",
+  "Barbarian Hut": "كوخ البرابرة",
+  "Tesla": "تسلا",
+  "Elixir Collector": "جامع الإكسير",
+  "X-Bow": "القوس",
+  "Tombstone": "شاهد القبر",
+  "Furnace": "الفرن",
+  "Goblin Cage": "قفص الغيلان",
+  "Goblin Drill": "حفار الغيلان",
+  "Fireball": "الكرة النارية",
+  "Arrows": "سهام",
+  "Rage": "الغضب",
+  "Rocket": "الصاروخ",
+  "Goblin Barrel": "برميل الغيلان",
+  "Freeze": "تجميد",
+  "Mirror": "مرآة",
+  "Lightning": "برق",
+  "Zap": "الصاعق",
+  "Poison": "السم",
+  "Graveyard": "المقبرة",
+  "The Log": "الجذع",
+  "Tornado": "إعصار",
+  "Clone": "استنساخ",
+  "Earthquake": "الزلزال",
+  "Barbarian Barrel": "برميل البرابرة",
+  "Heal Spirit": "روح الشفاء",
+  "Giant Snowball": "كرة الثلج العملاقة",
+  "Royal Delivery": "الطرد الملكي",
+  "Void": "العدم",
+  "Goblin Curse": "لعنة الغيلان",
+  "Spirit Empress": "إمبراطورة الأرواح",
+  "Vines": "اللبلاب"
+};
+
+// دالة ترجمة اسم البطاقة
+function translateCardName(englishName) {
+  if (!englishName) return "غير معروف";
+  // التحقق من الخريطة
+  if (CARD_NAME_AR[englishName]) {
+    return CARD_NAME_AR[englishName];
+  }
+  // إذا لم يوجد، نعيد الاسم الأصلي (قد يكون بطاقة جديدة)
+  return englishName;
+}
 
 const RARITY_DB = {
   "26000069": "champion", "26000074": "champion", "26000072": "champion", "26000065": "champion", 
@@ -295,7 +436,26 @@ async function startAnalysis() {
             if(isTower) { towerS += goldSpent; towerR += goldNeeded; towerCS += cardsCollected; towerCT += cardsTotalReq; }
             if(rarityStats[rarity]) { rarityStats[rarity].gs += goldSpent; rarityStats[rarity].gr += goldNeeded; rarityStats[rarity].cs += cardsCollected; rarityStats[rarity].ct += cardsTotalReq; }
 
-            return { id: gCard.id, cleanName: gCard.name || "غير معروف", imgUrl: getCardImageUrl(gCard.name), rarity: rarity, rarityKey: rarity, actualLvl: currentLvl, status: isOwned ? currentLvl : "غير مملوك", stock: isOwned ? (pCard.count || 0) : 0, spent: goldSpent, rem: goldNeeded, missingLevels: missingPerLevel, isTower: isTower, pctToMax: pctToMax, pctToNext: pctToNext };
+            // ترجمة اسم البطاقة للعربية
+            const translatedName = translateCardName(gCard.name || "غير معروف");
+            
+            return { 
+                id: gCard.id, 
+                cleanName: translatedName,
+                originalName: gCard.name || "غير معروف",
+                imgUrl: getCardImageUrl(gCard.name), 
+                rarity: rarity, 
+                rarityKey: rarity, 
+                actualLvl: currentLvl, 
+                status: isOwned ? currentLvl : "غير مملوك", 
+                stock: isOwned ? (pCard.count || 0) : 0, 
+                spent: goldSpent, 
+                rem: goldNeeded, 
+                missingLevels: missingPerLevel, 
+                isTower: isTower, 
+                pctToMax: pctToMax, 
+                pctToNext: pctToNext 
+            };
         });
 
         globalMinLevel = minAccountLevel;
@@ -416,7 +576,7 @@ async function startAnalysis() {
         document.getElementById("ladderPlanText").innerText = ladderPlanStr;
         document.getElementById("instantPlanText").innerText = instantPlanStr;
 
-        // ========== أفضل تطويرات ==========
+        // أفضل تطويرات
         let upgradable = globalResults.filter(r => r.actualLvl < MAX_LEVEL && r.status !== "غير مملوك");
         upgradable.sort((a, b) => b.pctToNext - a.pctToNext);
         let upHTML = `
@@ -432,7 +592,7 @@ async function startAnalysis() {
         }
         document.getElementById("topUpgradesData").innerHTML = upHTML + `</table>`;
 
-        // ========== التشكيلة الحالية ==========
+        // التشكيلة الحالية
         let deckIDs = new Set();
         if(pData.currentDeck) pData.currentDeck.forEach(c => deckIDs.add(c.id));
         if(pData.currentDeckSupportCards) pData.currentDeckSupportCards.forEach(c => deckIDs.add(c.id));
@@ -454,7 +614,7 @@ async function startAnalysis() {
         deckHTML += `</div>`;
         document.getElementById("deckData").innerHTML = deckHTML;
 
-        // ========== مستشار التشكيلة ==========
+        // مستشار التشكيلة
         const isEpicSundayDeck = (new Date().getDay() === 0);
         let permittedDeckRarities = isEpicSundayDeck ? ["common", "rare", "epic"] : ["common", "rare"];
 
@@ -472,8 +632,8 @@ async function startAnalysis() {
         let deckAdvisorBox = document.getElementById("deckAdvisorData");
         deckAdvisorBox.className = isEpicSundayDeck ? "epic-sunday-glow" : "";
         let daTitleColor = isEpicSundayDeck ? 'var(--accent-purple)' : 'var(--accent-red)';
-        let daHTML = `<h3 style="color:${daTitleColor};"><i class="fa-solid fa-crosshairs"></i> مستشار التشكيلة <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-icon"></i><span class="tooltip-text">أولوية طلب البطاقات من العشيرة. يراعي أحد البطاقات ممتازة!</span></div></h3>`;
-        if (isEpicSundayDeck) daHTML += `<div class="epic-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> أحد البطاقات ممتازة: الأولوية للبطاقات الممتازة!</div>`;
+        let daHTML = `<h3 style="color:${daTitleColor};"><i class="fa-solid fa-crosshairs"></i> مستشار التشكيلة <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-icon"></i><span class="tooltip-text">أولوية طلب البطاقات من العشيرة. يراعي أحد البطاقات الممتازة!</span></div></h3>`;
+        if (isEpicSundayDeck) daHTML += `<div class="epic-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> أحد البطاقات الممتازة: الأولوية للبطاقات الممتازة!</div>`;
         daHTML += `<table class="info-table"><tr><th style="text-align:right; color:var(--text-muted); font-size:10px;">البطاقة</th><th style="text-align:center; color:var(--text-muted); font-size:10px;">المستوى</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">المطلوب</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">% الجاهزية</th></tr>`;
         for(let i=0; i<3; i++) {
              if(deckPriority[i]) {
@@ -487,7 +647,7 @@ async function startAnalysis() {
         }
         deckAdvisorBox.innerHTML = daHTML + `</table>`;
 
-        // ========== مستشار الحساب ==========
+        // مستشار الحساب
         const isEpicSunday = (new Date().getDay() === 0);
         const getScore = (r) => { let next = r.actualLvl + 1; if (next > MAX_LEVEL) return 0; let req = CARD_LADDER[r.rarityKey][next]; return req ? (r.stock / req) : 0; };
         let permittedRarities = isEpicSunday ? ["common", "rare", "epic"] : ["common", "rare"];
@@ -506,7 +666,7 @@ async function startAnalysis() {
         accountAdvisorBox.className = isEpicSunday ? "epic-sunday-glow" : "";
         let titleColor = isEpicSunday ? 'var(--accent-purple)' : 'var(--accent-blue)';
         let advHTML = `<h3 style="color:${titleColor};"><i class="fa-solid fa-lightbulb"></i> مستشار الحساب <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-icon"></i><span class="tooltip-text">البحث عن البطاقات ذات المستوى الأدنى التي تحتاج نسخاً من العشيرة.</span></div></h3>`;
-        if (isEpicSunday) advHTML += `<div class="epic-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> أحد البطاقات ممتازة: الأولوية للبطاقات الممتازة!</div>`;
+        if (isEpicSunday) advHTML += `<div class="epic-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> أحد البطاقات الممتازة: الأولوية للبطاقات الممتازة!</div>`;
         advHTML += `<table class="info-table"><tr><th style="text-align:right; color:var(--text-muted); font-size:10px;">البطاقة</th><th style="text-align:center; color:var(--text-muted); font-size:10px;">المستوى</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">المخزون</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">% الجاهزية</th></tr>`;
         for(let i=0; i<3; i++) {
             if(reqList[i]) { 
@@ -520,7 +680,7 @@ async function startAnalysis() {
         }
         accountAdvisorBox.innerHTML = advHTML + `</table>`;
 
-        // ========== تحديث الرسوم البيانية ==========
+        // ===== تحديث الرسوم البيانية =====
         if(chartWinLoss) chartWinLoss.destroy();
         chartWinLoss = new Chart(document.getElementById('winLossChart'), { type: 'doughnut', data: { labels: ['فوز', 'خسارة', 'تعادل'], datasets: [{ data: [wins, losses, draws], backgroundColor: ['#22c55e', '#ef4444', '#94a3b8'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'أداء المعارك', color: '#f4f4f5' }, legend: { display: false } }, cutout: '65%' } });
         
@@ -539,8 +699,46 @@ async function startAnalysis() {
         if(chartCards) chartCards.destroy();
         chartCards = new Chart(document.getElementById('cardsChart'), { type: 'doughnut', data: { labels: ['المجمّع', 'مفقود عادية', 'مفقود نادرة', 'مفقود ممتازة', 'مفقود أسطورية', 'مفقود أبطال'], datasets: [{ data: [cardCollTotal, missingByRarity.common, missingByRarity.rare, missingByRarity.epic, missingByRarity.legendary, missingByRarity.champion], backgroundColor: ['#3b82f6', '#94a3b8', '#f97316', '#a855f7', '#06b6d4', '#facc15'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'مجموعة البطاقات', color: '#f4f4f5' }, legend: { display: false } }, cutout: '65%' } });
         
+        // رحلة الملك - تعتمد على المستويات
         if(chartXp) chartXp.destroy();
-        chartXp = new Chart(document.getElementById('xpChart'), { type: 'doughnut', data: { labels: ['الخبرة المكتسبة', 'الخبرة المتبقية'], datasets: [{ data: [playerTotalXp, totalXpToMax], backgroundColor: ['#a855f7', '#27272a'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'رحلة الملك', color: '#f4f4f5' }, legend: { display: false } }, cutout: '65%' } });
+        let currentLevel = currentExpLvl;
+        let maxLevel = 90;
+        let levelsCompleted = currentLevel - 1;
+        let levelsRemaining = maxLevel - currentLevel;
+
+        chartXp = new Chart(document.getElementById('xpChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['مستويات مكتملة', 'مستويات متبقية'],
+                datasets: [{
+                    data: [levelsCompleted, levelsRemaining],
+                    backgroundColor: ['#a855f7', '#27272a'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `المستوى ${currentLevel} من ${maxLevel}`,
+                        color: '#f4f4f5',
+                        font: { size: 14, weight: 'bold' }
+                    },
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                let value = context.raw || 0;
+                                return `${label}: ${value} مستوى`;
+                            }
+                        }
+                    }
+                },
+                cutout: '65%'
+            }
+        });
 
         renderMainTable();
         statusMsg.innerHTML = `<i class="fa-solid fa-circle-check"></i> اكتمل التحليل!`;
@@ -557,7 +755,6 @@ async function startAnalysis() {
 }
 
 function renderMainTable() {
-    // (نفس الكود السابق مع الحفاظ على caching)
     let filteredResults = globalResults.filter(r => {
         if (currentActiveFilter === 'all') return true;
         if (currentActiveFilter === 'tower') return r.isTower;
