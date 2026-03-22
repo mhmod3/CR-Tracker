@@ -1,4 +1,4 @@
-/* style.css - نسخة نهائية مع إصلاح عرض الرسوم البيانية على الجوال */
+/* style.css - نسخة نهائية مع عرض عمودي للرسوم البيانية على الجوال */
 * {
     margin: 0;
     padding: 0;
@@ -11,13 +11,13 @@ body {
     color: #f0f0f0;
     line-height: 1.5;
     padding: 12px;
-    overflow-x: hidden; /* منع أي تمرير أفقي على الجسم */
+    overflow-x: hidden;
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    overflow-x: hidden; /* منع التمرير الأفقي داخل الحاوية */
+    overflow-x: hidden;
 }
 
 /* Header */
@@ -195,7 +195,7 @@ header p {
     width: 100%;
 }
 
-/* ===== الرسوم البيانية - عرض عمودي على الجوال ===== */
+/* الرسوم البيانية - عرض عمودي على الجوال */
 .charts-grid {
     display: flex;
     flex-direction: column;
@@ -210,7 +210,7 @@ header p {
     border-radius: 16px;
     padding: 12px;
     height: 200px;
-    width: 100%; /* تأكد من أنها تأخذ العرض الكامل */
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -492,7 +492,7 @@ header p {
     display: inline-block;
 }
 
-/* تلميحات الأدوات (tooltips) */
+/* تلميحات الأدوات */
 .tooltip-container {
     position: relative;
     display: inline-flex;
@@ -535,18 +535,17 @@ header p {
     opacity: 1;
 }
 
-/* ===== تحسينات للشاشات المتوسطة والكبيرة ===== */
+/* تحسينات للشاشات المتوسطة والكبيرة */
 @media (min-width: 768px) {
     body {
         padding: 20px;
     }
     
-    /* على الأجهزة اللوحية: 2 رسوم بيانية في الصف */
     .charts-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 20px;
-        flex-direction: unset; /* إلغاء العمودي */
+        flex-direction: unset;
     }
     
     .grid-2 {
@@ -568,7 +567,6 @@ header p {
 }
 
 @media (min-width: 1024px) {
-    /* على سطح المكتب: 4 رسوم بيانية في الصف */
     .charts-grid {
         grid-template-columns: repeat(4, 1fr);
     }
