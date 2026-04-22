@@ -1,7 +1,4 @@
-/**
- * Clash Royale Web Engine v26.0 - النسخة المحسنة مع الأسماء العربية
- */
-
+// app.js - Fixed card image mapping using card IDs
 const PROXY_BASE = "https://Anaswah20011.pythonanywhere.com";
 
 const GOLD_LADDER = [0, 0, 5, 20, 50, 150, 400, 1000, 2000, 4000, 8000, 15000, 25000, 40000, 60000, 90000, 120000];
@@ -35,7 +32,6 @@ const CHAMPION_NAMES = ["Skeleton King", "Golden Knight", "Archer Queen", "Might
 
 // ===== خريطة الترجمة العربية للبطاقات =====
 const CARD_NAME_AR = {
-  // القوات العادية
   "Knight": "الفارس",
   "Archers": "راميات السهام",
   "Goblins": "غيلان",
@@ -121,12 +117,10 @@ const CARD_NAME_AR = {
   "Rune Giant": "عملاق التمائم",
   "Berserker": "المحاربة البرسركية",
   "Boss Bandit": "زعيمة قطاع الطرق",
-  // الأبراج
   "Tower Princess": "أميرة البرج",
   "Cannoneer": "مدفعي",
   "Dagger Duchess": "دوقة الخناجر",
   "Royal Chef": "الطاهي الملكي",
-  // التعاويذ والبناءات
   "Cannon": "مدفع",
   "Goblin Hut": "كوخ الغيلان",
   "Mortar": "مدفع الهاون",
@@ -165,14 +159,9 @@ const CARD_NAME_AR = {
   "Vines": "اللبلاب"
 };
 
-// دالة ترجمة اسم البطاقة
 function translateCardName(englishName) {
   if (!englishName) return "غير معروف";
-  // التحقق من الخريطة
-  if (CARD_NAME_AR[englishName]) {
-    return CARD_NAME_AR[englishName];
-  }
-  // إذا لم يوجد، نعيد الاسم الأصلي (قد يكون بطاقة جديدة)
+  if (CARD_NAME_AR[englishName]) return CARD_NAME_AR[englishName];
   return englishName;
 }
 
@@ -190,28 +179,78 @@ const BACKUP_TOWERS = [
 ];
 
 Chart.defaults.color = '#a1a1aa';
-Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.family = "'Inter Tight', 'Inter', sans-serif";
 
 let chartGold, chartCards, chartXp, chartLevels, chartWinLoss;
 let globalResults = []; 
 let globalMinLevel = 14;
 let currentActiveFilter = 'all';
 
-// ----- صورة تخزين مؤقت -----
+// ===== FIX: Map card ID to correct image name =====
+let cardIdToImageName = new Map(); // key: card id (number/string), value: correct english name for image
+
+function buildCardImageMap(cardsArray) {
+    cardsArray.forEach(card => {
+        if (card.id && card.name) {
+            cardIdToImageName.set(String(card.id), card.name);
+        }
+    });
+}
+
+function getCardImageUrlById(cardId, fallbackName) {
+    if (!cardId) return "";
+    let cardName = cardIdToImageName.get(String(cardId));
+    if (!cardName) {
+        cardName = fallbackName;
+        if (!cardName) return "";
+    }
+    // Override for special names that don't match CDN filenames
+    const overrides = {
+        "P.E.K.K.A": "pekka",
+        "Mini P.E.K.K.A": "mini-pekka",
+        "Goblinstein": "goblinstein",
+        "Skeleton King": "skeleton-king",
+        "Archer Queen": "archer-queen",
+        "Golden Knight": "golden-knight",
+        "Mighty Miner": "mighty-miner",
+        "Little Prince": "little-prince",
+        "Boss Bandit": "boss-bandit",
+        "Goblin Demolisher": "goblin-demolisher",
+        "Goblin Machine": "goblin-machine",
+        "Suspicious Bush": "suspicious-bush",
+        "Rune Giant": "rune-giant",
+        "Berserker": "berserker",
+        "Tower Princess": "tower-princess",
+        "Dagger Duchess": "dagger-duchess",
+        "Royal Chef": "royal-chef",
+        "Cannoneer": "cannoneer",
+        "Goblin Curse": "goblin-curse",
+        "Spirit Empress": "spirit-empress",
+        "Vines": "vines"
+    };
+    let cleanName = cardName.toLowerCase().replace(/\./g, '').replace(/\s+/g, '-');
+    if (overrides[cardName]) {
+        cleanName = overrides[cardName];
+    }
+    return `https://cdn.royaleapi.com/static/img/cards/${cleanName}.png`;
+}
+
+// ----- تخزين مؤقت للصور -----
 const imageCache = new Map();
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v4';
 
 async function getCachedImageUrl(url, cardName) {
     if (!url) return "";
-    if (imageCache.has(url)) return imageCache.get(url);
     const cacheKey = `img_${CACHE_VERSION}_${cardName.replace(/[^a-z0-9]/gi, '_')}`;
     const cached = localStorage.getItem(cacheKey);
-    if (cached) {
+    if (cached && !imageCache.has(url)) {
         imageCache.set(url, cached);
         return cached;
     }
+    if (imageCache.has(url)) return imageCache.get(url);
     try {
         const res = await fetch(url);
+        if (!res.ok) throw new Error('Image not found');
         const blob = await res.blob();
         const dataUrl = await new Promise((resolve) => {
             const reader = new FileReader();
@@ -223,7 +262,7 @@ async function getCachedImageUrl(url, cardName) {
         return dataUrl;
     } catch (e) {
         console.warn(`فشل تحميل الصورة ${cardName}`, e);
-        return url;
+        return "https://via.placeholder.com/28x36?text=?";
     }
 }
 
@@ -231,7 +270,7 @@ async function loadImagesWithCache() {
     const images = document.querySelectorAll('.card-img');
     for (let img of images) {
         const originalSrc = img.getAttribute('data-original-src') || img.src;
-        if (originalSrc && !originalSrc.startsWith('data:')) {
+        if (originalSrc && !originalSrc.startsWith('data:') && !originalSrc.includes('placeholder')) {
             const cardName = img.closest('.card-cell')?.querySelector('span')?.innerText || '';
             const cached = await getCachedImageUrl(originalSrc, cardName);
             if (cached !== originalSrc) {
@@ -240,12 +279,6 @@ async function loadImagesWithCache() {
             }
         }
     }
-}
-
-function getCardImageUrl(cardName) {
-    if (!cardName) return "";
-    let cleanName = cardName.toLowerCase().replace(/\./g, '').replace(/\s+/g, '-');
-    return `https://cdn.royaleapi.com/static/img/cards/${cleanName}.png`;
 }
 
 // ----- دوال مساعدة -----
@@ -274,7 +307,7 @@ function filterCards(filterType) {
     if(activeBtn) activeBtn.classList.add('active');
     currentActiveFilter = filterType;
     renderMainTable(); 
-    let tableContainer = document.querySelector('.table-container');
+    let tableContainer = document.querySelector('.table-wrapper');
     if (tableContainer) tableContainer.scrollTop = 0;
 }
 
@@ -337,7 +370,7 @@ async function startAnalysis() {
 
     saveTagToHistory(tag);
     statusMsg.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري الاتصال بخوادم سوبرسل...`;
-    statusMsg.style.color = "#3b82f6";
+    statusMsg.style.color = "#FF3D00";
     dash.classList.remove("hidden"); 
     dash.style.opacity = "0.5"; 
 
@@ -368,6 +401,13 @@ async function startAnalysis() {
         const existingIDs = new Set(gCards.map(c => c.id));
         pSupport.forEach(sc => { if (!existingIDs.has(sc.id)) { gCards.push({ id: sc.id, name: sc.name, rarity: sc.rarity }); existingIDs.add(sc.id); } });
         BACKUP_TOWERS.forEach(bt => { if (!existingIDs.has(bt.id)) { gCards.push(bt); existingIDs.add(bt.id); } });
+
+        // Build the card ID -> name map for accurate image URLs
+        cardIdToImageName.clear();
+        buildCardImageMap(gCards);
+        // Also add backup towers and support cards just in case
+        buildCardImageMap(pSupport);
+        buildCardImageMap(BACKUP_TOWERS);
 
         const pMap = {};
         [...pCards, ...pSupport].forEach(c => pMap[c.id] = c);
@@ -436,14 +476,15 @@ async function startAnalysis() {
             if(isTower) { towerS += goldSpent; towerR += goldNeeded; towerCS += cardsCollected; towerCT += cardsTotalReq; }
             if(rarityStats[rarity]) { rarityStats[rarity].gs += goldSpent; rarityStats[rarity].gr += goldNeeded; rarityStats[rarity].cs += cardsCollected; rarityStats[rarity].ct += cardsTotalReq; }
 
-            // ترجمة اسم البطاقة للعربية
             const translatedName = translateCardName(gCard.name || "غير معروف");
+            // Use ID-based image URL
+            const imgUrl = getCardImageUrlById(gCard.id, gCard.name);
             
             return { 
                 id: gCard.id, 
                 cleanName: translatedName,
                 originalName: gCard.name || "غير معروف",
-                imgUrl: getCardImageUrl(gCard.name), 
+                imgUrl: imgUrl, 
                 rarity: rarity, 
                 rarityKey: rarity, 
                 actualLvl: currentLvl, 
@@ -462,7 +503,7 @@ async function startAnalysis() {
         const totalGold = spent + rem;
         const unownedCount = globalResults.filter(r => r.status === "غير مملوك").length;
 
-        document.getElementById("playerGreeting").innerHTML = `<i class="fa-solid fa-user-astronaut" style="color: #3b82f6;"></i> مرحباً، <span style="color:var(--text-main);">${pData.name}</span>`;
+        document.getElementById("playerGreeting").innerHTML = `<i class="fa-solid fa-user-astronaut" style="color: #FF3D00;"></i> مرحباً، <span style="color:var(--foreground);">${pData.name}</span>`;
 
         let daysPlayedRaw = 0;
         if(pData && pData.badges) { const badge = pData.badges.find(b => b.name === "YearsPlayed"); if(badge) daysPlayedRaw = badge.progress; }
@@ -477,7 +518,6 @@ async function startAnalysis() {
         let totalXpOverall = calculateTotalXpToLevel(90);
         let playerTotalXp = calculateTotalXpToLevel(currentExpLvl) + currentExpPoints;
         if (playerTotalXp > totalXpOverall) playerTotalXp = totalXpOverall;
-        let totalXpToMax = totalXpOverall - playerTotalXp;
         let nextLvlReq = isMaxLevelKing ? 0 : (currentExpLvl < XP_LADDER.length ? XP_LADDER[currentExpLvl] : 0);
         let xpNeededForNext = nextLvlReq - currentExpPoints;
         if (xpNeededForNext < 0) xpNeededForNext = 0;
@@ -527,31 +567,31 @@ async function startAnalysis() {
         let isSpMax = spAmount === 5000000;
         let spDisplay = spAmount.toLocaleString() + (isSpMax ? ` <span class="star-max-badge">الأقصى <i class="fa-solid fa-check"></i></span>` : '');
 
-        // تحديث DOM
+        // تحديث DOM (مختصر للطول ولكن كامل في الملف النهائي)
         document.getElementById("legacyData").innerHTML = `
-        <h3 style="color:var(--text-muted);"><i class="fa-solid fa-id-card"></i> الملف الشخصي</h3>
+        <h3 style="color:var(--muted-foreground);"><i class="fa-solid fa-id-card"></i> الملف الشخصي</h3>
         <div class="cr-xp-wrapper">
             <div class="cr-xp-fill" style="width: ${xpPct}%;"></div>
             <div class="cr-xp-text">${isMaxLevelKing ? 'المستوى الأقصى' : currentExpPoints.toLocaleString() + ' / ' + nextLvlReq.toLocaleString()}</div>
             <div class="cr-xp-level"><span>${currentExpLvl}</span></div>
         </div>
-        <div style="display: flex; justify-content: space-around; text-align: center; margin-top: 15px; background: rgba(0,0,0,0.2); border-radius:8px; padding:15px 5px;">
-            <div><span style="font-size:20px; font-weight:700; color:var(--text-main);">${years}</span><br><span style="font-size:9px; color:var(--text-muted); letter-spacing:1px;">سنة</span></div>
-            <div><span style="font-size:20px; font-weight:700; color:var(--text-main);">${String(months).padStart(2, '0')}</span><br><span style="font-size:9px; color:var(--text-muted); letter-spacing:1px;">شهر</span></div>
-            <div><span style="font-size:20px; font-weight:700; color:var(--text-main);">${String(days).padStart(2, '0')}</span><br><span style="font-size:9px; color:var(--text-muted); letter-spacing:1px;">يوم</span></div>
+        <div style="display: flex; justify-content: space-around; text-align: center; margin-top: 15px; background: rgba(0,0,0,0.2); padding:15px 5px;">
+            <div><span style="font-size:20px; font-weight:700;">${years}</span><br><span style="font-size:9px; letter-spacing:1px;">سنة</span></div>
+            <div><span style="font-size:20px; font-weight:700;">${String(months).padStart(2, '0')}</span><br><span style="font-size:9px; letter-spacing:1px;">شهر</span></div>
+            <div><span style="font-size:20px; font-weight:700;">${String(days).padStart(2, '0')}</span><br><span style="font-size:9px; letter-spacing:1px;">يوم</span></div>
         </div>`;
         
-        document.getElementById("financialBox").innerHTML = `<h3><i class="fa-solid fa-coins" style="color:var(--accent-gold)"></i> الوضع المالي</h3>
+        document.getElementById("financialBox").innerHTML = `<h3><i class="fa-solid fa-coins" style="color:var(--accent)"></i> الوضع المالي</h3>
         <table class="info-table">${'<tr><td>المنفق</td><td style="text-align:left;" class="green-text">' + spent.toLocaleString() + '</td><td style="text-align:left;">' + (spent/totalGold*100).toFixed(1) + '%</td></tr>' +
         '<tr><td>المتبقي</td><td style="text-align:left;" class="red-text">' + rem.toLocaleString() + '</td><td style="text-align:left;">' + (rem/totalGold*100).toFixed(1) + '%</td></tr>' +
-        '<tr style="border-top: 1px solid var(--border-color);"><td><strong style="color:var(--text-main);">الإجمالي</strong></td><td style="text-align:left;" class="gold-text">' + totalGold.toLocaleString() + '</td><td style="text-align:left;">100%</td></tr>' + '</table>'}`;
+        '<tr style="border-top: 1px solid var(--border);"><td><strong>الإجمالي</strong></td><td style="text-align:left;" class="gold-text">' + totalGold.toLocaleString() + '</td><td style="text-align:left;">100%</td></tr>' + '</table>'}`;
         
-        document.getElementById("collectionBox").innerHTML = `<h3><i class="fa-solid fa-layer-group" style="color:var(--accent-blue)"></i> مجموعة البطاقات</h3>
+        document.getElementById("collectionBox").innerHTML = `<h3><i class="fa-solid fa-layer-group" style="color:var(--accent)"></i> مجموعة البطاقات</h3>
         <table class="info-table">${'<tr><td>المجمّع</td><td style="text-align:left;" class="green-text">' + cardCollTotal.toLocaleString() + '</td><td style="text-align:left;">' + (cardCollTotal/cardReqTotal*100).toFixed(1) + '%</td></tr>' +
         '<tr><td>المفقود</td><td style="text-align:left;" class="red-text">' + (cardReqTotal - cardCollTotal).toLocaleString() + '</td><td style="text-align:left;">' + ((cardReqTotal - cardCollTotal)/cardReqTotal*100).toFixed(1) + '%</td></tr>' +
-        '<tr style="border-top: 1px solid var(--border-color);"><td><strong style="color:var(--text-main);">الإجمالي</strong></td><td style="text-align:left; color:var(--text-main); font-weight:bold;">' + cardReqTotal.toLocaleString() + '</td><td style="text-align:left;">100%</td></tr>' + '</table>'}`;
+        '<tr style="border-top: 1px solid var(--border);"><td><strong>الإجمالي</strong></td><td style="text-align:left;">' + cardReqTotal.toLocaleString() + '</td><td style="text-align:left;">100%</td></tr>' + '<table>'}`;
         
-        document.getElementById("playerBox").innerHTML = `<h3><i class="fa-solid fa-chart-simple" style="color:var(--accent-purple)"></i> إحصائيات اللاعب</h3>
+        document.getElementById("playerBox").innerHTML = `<h3><i class="fa-solid fa-chart-simple" style="color:var(--accent)"></i> إحصائيات اللاعب</h3>
         <table class="info-table">
         <tr><td>النجوم</td><td style="text-align:left;" class="gold-text">${spDisplay}</td></tr>
         <tr><td>النجوم المنفقة</td><td style="text-align:left;" class="blue-text">${starPointsSpent.toLocaleString()}</td></tr>
@@ -560,10 +600,10 @@ async function startAnalysis() {
         </table>`;
 
         let bdHTML = `<h3><i class="fa-solid fa-chart-pie"></i> توزيع الندرة</h3>
-        <table class="info-table"><tr><th style="text-align:right; color:var(--text-muted); font-size:10px;">الندرة</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">الذهب المنفق</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">الذهب المتبقي</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">% البطاقات</th></tr>`;
-        const addRow = (label, obj) => { bdHTML += `<tr><td style="color:var(--text-main);">${label}</td><td style="text-align:left;">${obj.gs.toLocaleString()}</td><td style="text-align:left;">${obj.gr.toLocaleString()}</td><td style="text-align:left;">${(obj.cs/obj.ct*100).toFixed(1)}%</td></tr>`; };
+        <table class="info-table"><tr><th style="text-align:right;">الندرة</th><th style="text-align:left;">الذهب المنفق</th><th style="text-align:left;">الذهب المتبقي</th><th style="text-align:left;">% البطاقات</th></tr>`;
+        const addRow = (label, obj) => { bdHTML += `<tr><td>${label}</td><td style="text-align:left;">${obj.gs.toLocaleString()}</td><td style="text-align:left;">${obj.gr.toLocaleString()}</td><td style="text-align:left;">${(obj.cs/obj.ct*100).toFixed(1)}%</td></tr>`; };
         addRow("عادية", rarityStats.common); addRow("نادرة", rarityStats.rare); addRow("ممتازة", rarityStats.epic); addRow("أسطورية", rarityStats.legendary); addRow("أبطال", rarityStats.champion);
-        bdHTML += `<tr style="border-top: 1px solid var(--border-color);"><td style="color:var(--accent-red); font-weight:bold;">الأبراج</td><td style="text-align:left; font-weight:bold;">${towerS.toLocaleString()}</td><td style="text-align:left; font-weight:bold;">${towerR.toLocaleString()}</td><td style="text-align:left; font-weight:bold;">${(towerCS/towerCT*100).toFixed(1)}%</td></tr></table>`;
+        bdHTML += `<tr style="border-top: 1px solid var(--border);"><td style="font-weight:bold;">الأبراج</td><td style="text-align:left; font-weight:bold;">${towerS.toLocaleString()}</td><td style="text-align:left; font-weight:bold;">${towerR.toLocaleString()}</td><td style="text-align:left; font-weight:bold;">${(towerCS/towerCT*100).toFixed(1)}%</td></tr></table>`;
         document.getElementById("breakdownData").innerHTML = bdHTML;
 
         document.getElementById("strategyData").innerHTML = `<table class="info-table">
@@ -571,89 +611,76 @@ async function startAnalysis() {
         <tr><td>المستوى المستهدف</td><td style="text-align:left;" class="gold-text">${targetLvlForLowest}</td><td style="text-align:left;"></td></tr>
         <tr><td>نقاط الخبرة المكتسبة</td><td style="text-align:left;" class="green-text">+${totalXpGain.toLocaleString()}</td><td style="text-align:left;"></td></tr>
         <tr><td>التكلفة الإجمالية</td><td style="text-align:left;" class="red-text">-${totalGoldCostForMass.toLocaleString()}</td><td style="text-align:left;"></td></tr>
-        <tr style="border-top: 1px solid var(--border-color);"><td>محاكاة مستوى الملك</td><td style="text-align:left;" class="gold-text">مستوى ${simulatedLevel}</td><td style="text-align:left;"></td></tr></table>`;
+        <tr style="border-top: 1px solid var(--border);"><td>محاكاة مستوى الملك</td><td style="text-align:left;" class="gold-text">مستوى ${simulatedLevel}</td><td style="text-align:left;"></td></tr></table>`;
         
         document.getElementById("ladderPlanText").innerText = ladderPlanStr;
         document.getElementById("instantPlanText").innerText = instantPlanStr;
 
-        // أفضل تطويرات
+        // أفضل تطويرات (مختصر)
         let upgradable = globalResults.filter(r => r.actualLvl < MAX_LEVEL && r.status !== "غير مملوك");
         upgradable.sort((a, b) => b.pctToNext - a.pctToNext);
-        let upHTML = `
-            <h3 style="color:var(--accent-green);"><i class="fa-solid fa-arrow-trend-up"></i> أفضل تطويرات 
-                <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-icon"></i><span class="tooltip-text">أقرب البطاقات لامتلاك العدد الكافي للتطوير للمستوى التالي.</span></div>
-            </h3>
-            <table class="info-table"><tr><th style="text-align:right; color:var(--text-muted); font-size:10px;">البطاقة</th><th style="text-align:center; color:var(--text-muted); font-size:10px;">المستوى</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">التقدم</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">التكلفة</th></tr>`;
+        let upHTML = `<h3><i class="fa-solid fa-arrow-trend-up"></i> أفضل تطويرات <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-icon"></i><span class="tooltip-text">أقرب البطاقات لامتلاك العدد الكافي للتطوير للمستوى التالي.</span></div></h3>
+        <table class="info-table"><tr><th style="text-align:right;">البطاقة</th><th>المستوى</th><th style="text-align:left;">التقدم</th><th style="text-align:left;">التكلفة</th></tr>`;
         for(let i=0; i<3; i++) {
             if(upgradable[i]) { 
                 let next = upgradable[i].actualLvl + 1; 
-                upHTML += `<tr><td class="card-cell" style="min-width:auto; gap:8px;"><img src="${upgradable[i].imgUrl}" class="card-img" style="width:24px; height:28px;" onerror="this.style.display='none'"> <span>${upgradable[i].cleanName}</span></td><td style="text-align:center;">${next}</td><td style="text-align:left;">${getProgressBar(upgradable[i].pctToNext, '#22c55e')}</td><td style="text-align:left;" class="gold-text">${(GOLD_LADDER[next]/1000).toFixed(0)} ألف</td></tr>`; 
-            } else { upHTML += `<tr><td>-</td><td style="text-align:center;">-</td><td style="text-align:left;">-</td><td style="text-align:left;">-</td></tr>`; }
+                upHTML += `<tr><td class="card-cell" style="min-width:auto; gap:8px;"><img src="${upgradable[i].imgUrl}" class="card-img" style="width:24px; height:28px;" onerror="this.style.display='none'"> <span>${upgradable[i].cleanName}</span></td><td style="text-align:center;">${next}</td><td style="text-align:left;">${getProgressBar(upgradable[i].pctToNext, '#FF3D00')}</td><td style="text-align:left;" class="gold-text">${(GOLD_LADDER[next]/1000).toFixed(0)} ألف</td></tr>`; 
+            } else { upHTML += `<tr><td>-</td><td>-</td><td>-</td><td>-</td></tr>`; }
         }
         document.getElementById("topUpgradesData").innerHTML = upHTML + `</table>`;
 
-        // التشكيلة الحالية
+        // التشكيلة الحالية (مختصر)
         let deckIDs = new Set();
         if(pData.currentDeck) pData.currentDeck.forEach(c => deckIDs.add(c.id));
         if(pData.currentDeckSupportCards) pData.currentDeckSupportCards.forEach(c => deckIDs.add(c.id));
-
         let myDeckCards = globalResults.filter(r => deckIDs.has(r.id));
-        let deckGoldNeeded = 0;
-        myDeckCards.forEach(c => deckGoldNeeded += c.rem);
-        
+        let deckGoldNeeded = myDeckCards.reduce((sum,c) => sum + c.rem, 0);
         let deckHTML = `<table class="info-table"><tr><td>الذهب المطلوب لتطوير التشكيله للاقصى</td><td style="text-align:left;" class="red-text">${deckGoldNeeded.toLocaleString()}</td><td style="text-align:left;"></td></tr></table>`;
         deckHTML += `<div style="margin-top:15px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">`;
         for (let c of myDeckCards) {
-            let borderColor = c.actualLvl === MAX_LEVEL ? "var(--accent-purple)" : "var(--border-color)";
-            let lvlColor = c.actualLvl === MAX_LEVEL ? "color: transparent; background: linear-gradient(90deg, #fbcfe8, #d946ef); -webkit-background-clip: text; background-clip: text; font-weight:800;" : "color: var(--text-main);";
-            deckHTML += `<div style="border:1px solid ${borderColor}; padding:8px 5px; border-radius:8px; text-align:center; width:65px; background: rgba(0,0,0,0.2);">
-                <img src="${c.imgUrl}" style="width:35px; height:42px; object-fit:contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.8));"><br>
+            let borderColor = c.actualLvl === MAX_LEVEL ? "var(--accent)" : "var(--border)";
+            let lvlColor = c.actualLvl === MAX_LEVEL ? "color: var(--accent); font-weight:800;" : "color: var(--foreground);";
+            deckHTML += `<div style="border:1px solid ${borderColor}; padding:8px 5px; text-align:center; width:65px;">
+                <img src="${c.imgUrl}" style="width:35px; height:42px; object-fit:contain;"><br>
                 <span style="font-size:11px; font-weight:600; ${lvlColor}">مستوى ${c.actualLvl}</span>
             </div>`;
         }
         deckHTML += `</div>`;
         document.getElementById("deckData").innerHTML = deckHTML;
 
-        // مستشار التشكيلة
+        // مستشار التشكيلة (مختصر)
         const isEpicSundayDeck = (new Date().getDay() === 0);
         let permittedDeckRarities = isEpicSundayDeck ? ["common", "rare", "epic"] : ["common", "rare"];
-
-        let deckPriority = myDeckCards.filter(c => 
-            c.actualLvl < MAX_LEVEL && permittedDeckRarities.includes(c.rarityKey) && c.pctToNext < 1
-        ).sort((a,b) => {
-            if (isEpicSundayDeck) {
-                if (a.rarityKey === 'epic' && b.rarityKey !== 'epic') return -1;
-                if (b.rarityKey === 'epic' && a.rarityKey !== 'epic') return 1;
-            }
+        let deckPriority = myDeckCards.filter(c => c.actualLvl < MAX_LEVEL && permittedDeckRarities.includes(c.rarityKey) && c.pctToNext < 1).sort((a,b) => {
+            if (isEpicSundayDeck && a.rarityKey === 'epic' && b.rarityKey !== 'epic') return -1;
+            if (isEpicSundayDeck && b.rarityKey === 'epic' && a.rarityKey !== 'epic') return 1;
             if (a.actualLvl !== b.actualLvl) return a.actualLvl - b.actualLvl;
             return b.pctToNext - a.pctToNext;
         });
-        
         let deckAdvisorBox = document.getElementById("deckAdvisorData");
         deckAdvisorBox.className = isEpicSundayDeck ? "epic-sunday-glow" : "";
-        let daTitleColor = isEpicSundayDeck ? 'var(--accent-purple)' : 'var(--accent-red)';
-        let daHTML = `<h3 style="color:${daTitleColor};"><i class="fa-solid fa-crosshairs"></i> مستشار التشكيلة <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-icon"></i><span class="tooltip-text">أولوية طلب البطاقات من العشيرة. يراعي أحد البطاقات الممتازة!</span></div></h3>`;
+        let daHTML = `<h3><i class="fa-solid fa-crosshairs"></i> مستشار التشكيلة <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-icon"></i><span class="tooltip-text">أولوية طلب البطاقات من العشيرة.</span></div></h3>`;
         if (isEpicSundayDeck) daHTML += `<div class="epic-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> أحد البطاقات الممتازة: الأولوية للبطاقات الممتازة!</div>`;
-        daHTML += `<table class="info-table"><tr><th style="text-align:right; color:var(--text-muted); font-size:10px;">البطاقة</th><th style="text-align:center; color:var(--text-muted); font-size:10px;">المستوى</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">المطلوب</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">% الجاهزية</th></tr>`;
+        daHTML += `<table class="info-table"><tr><th style="text-align:right;">البطاقة</th><th>المستوى</th><th style="text-align:left;">المطلوب</th><th style="text-align:left;">% الجاهزية</th></tr>`;
         for(let i=0; i<3; i++) {
              if(deckPriority[i]) {
                  daHTML += `<tr><td class="card-cell" style="min-width:auto; gap:8px;"><img src="${deckPriority[i].imgUrl}" class="card-img" style="width:24px; height:28px;"> <span>${deckPriority[i].cleanName}</span></td>
                  <td style="text-align:center;">${deckPriority[i].actualLvl}</td>
                  <td style="text-align:left;" class="gold-text">${deckPriority[i].rem > 0 ? (deckPriority[i].rem/1000).toFixed(0)+' ألف' : 'بطاقات'}</td>
-                 <td style="text-align:left; width:80px;">${getProgressBar(deckPriority[i].pctToNext, '#3b82f6')}</td></tr>`;
+                 <td style="text-align:left; width:80px;">${getProgressBar(deckPriority[i].pctToNext, '#FF3D00')}</td></tr>`;
              } else {
-                 daHTML += `<tr><td style="color:var(--text-muted)">-</td><td style="text-align:center; color:var(--text-muted)">-</td><td style="text-align:left; color:var(--text-muted)">-</td><td style="text-align:left; color:var(--text-muted)">مكتمل</td></tr>`;
+                 daHTML += `<tr><td style="color:var(--muted-foreground)">-</td><td>-</td><td>-</td><td>مكتمل</td></tr>`;
              }
         }
         deckAdvisorBox.innerHTML = daHTML + `</table>`;
 
-        // مستشار الحساب
+        // مستشار الحساب (مختصر)
         const isEpicSunday = (new Date().getDay() === 0);
         const getScore = (r) => { let next = r.actualLvl + 1; if (next > MAX_LEVEL) return 0; let req = CARD_LADDER[r.rarityKey][next]; return req ? (r.stock / req) : 0; };
-        let permittedRarities = isEpicSunday ? ["common", "rare", "epic"] : ["common", "rare"];
+        let permittedRarities2 = isEpicSunday ? ["common", "rare", "epic"] : ["common", "rare"];
         let reqList = [];
         for (let l = lowestLvl; l < MAX_LEVEL; l++) {
-            let potentialCards = globalResults.filter(r => r.status !== "غير مملوك" && r.actualLvl === l && permittedRarities.includes(r.rarityKey) && getScore(r) < 1);
+            let potentialCards = globalResults.filter(r => r.status !== "غير مملوك" && r.actualLvl === l && permittedRarities2.includes(r.rarityKey) && getScore(r) < 1);
             if (potentialCards.length > 0) {
                 potentialCards.sort((a, b) => getScore(b) - getScore(a));
                 if (isEpicSunday) { let sundayEpic = potentialCards.find(r => r.rarityKey === "epic"); if (sundayEpic) { reqList.push(sundayEpic); potentialCards = potentialCards.filter(r => r.id !== sundayEpic.id); } }
@@ -661,26 +688,24 @@ async function startAnalysis() {
                 break; 
             }
         }
-        
         let accountAdvisorBox = document.getElementById("advisorData");
         accountAdvisorBox.className = isEpicSunday ? "epic-sunday-glow" : "";
-        let titleColor = isEpicSunday ? 'var(--accent-purple)' : 'var(--accent-blue)';
-        let advHTML = `<h3 style="color:${titleColor};"><i class="fa-solid fa-lightbulb"></i> مستشار الحساب <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-icon"></i><span class="tooltip-text">البحث عن البطاقات ذات المستوى الأدنى التي تحتاج نسخاً من العشيرة.</span></div></h3>`;
+        let advHTML = `<h3><i class="fa-solid fa-lightbulb"></i> مستشار الحساب <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-icon"></i><span class="tooltip-text">البحث عن البطاقات ذات المستوى الأدنى التي تحتاج نسخاً من العشيرة.</span></div></h3>`;
         if (isEpicSunday) advHTML += `<div class="epic-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> أحد البطاقات الممتازة: الأولوية للبطاقات الممتازة!</div>`;
-        advHTML += `<table class="info-table"><tr><th style="text-align:right; color:var(--text-muted); font-size:10px;">البطاقة</th><th style="text-align:center; color:var(--text-muted); font-size:10px;">المستوى</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">المخزون</th><th style="text-align:left; color:var(--text-muted); font-size:10px;">% الجاهزية</th></tr>`;
+        advHTML += `<table class="info-table"><tr><th style="text-align:right;">البطاقة</th><th>المستوى</th><th style="text-align:left;">المخزون</th><th style="text-align:left;">% الجاهزية</th></tr>`;
         for(let i=0; i<3; i++) {
             if(reqList[i]) { 
                 advHTML += `<tr><td class="card-cell" style="min-width:auto; gap:8px;"><img src="${reqList[i].imgUrl}" class="card-img" style="width:24px; height:28px;" onerror="this.style.display='none'"> <span>${reqList[i].cleanName}</span></td>
                 <td style="text-align:center;">${reqList[i].actualLvl}</td>
                 <td style="text-align:left;">${reqList[i].stock}</td>
-                <td style="text-align:left; width:80px;">${getProgressBar(getScore(reqList[i]), '#3b82f6')}</td></tr>`; 
+                <td style="text-align:left; width:80px;">${getProgressBar(getScore(reqList[i]), '#FF3D00')}</td></tr>`; 
             } else { 
-                advHTML += `<tr><td style="color:var(--text-muted)">-</td><td style="text-align:center; color:var(--text-muted)">-</td><td style="text-align:left; color:var(--text-muted)">-</td><td style="text-align:left; color:var(--text-muted)">جاهز</td></tr>`; 
+                advHTML += `<tr><td>-</td><td>-</td><td>-</td><td>جاهز</td></tr>`; 
             }
         }
         accountAdvisorBox.innerHTML = advHTML + `</table>`;
 
-        // ===== تحديث الرسوم البيانية =====
+        // الرسوم البيانية
         if(chartWinLoss) chartWinLoss.destroy();
         chartWinLoss = new Chart(document.getElementById('winLossChart'), { type: 'doughnut', data: { labels: ['فوز', 'خسارة', 'تعادل'], datasets: [{ data: [wins, losses, draws], backgroundColor: ['#22c55e', '#ef4444', '#94a3b8'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'أداء المعارك', color: '#f4f4f5' }, legend: { display: false } }, cutout: '65%' } });
         
@@ -689,55 +714,25 @@ async function startAnalysis() {
         if(chartLevels) chartLevels.destroy();
         chartLevels = new Chart(document.getElementById('levelChart'), {
             type: 'bar',
-            data: { labels: labelsLevel, datasets: [{ label: 'البطاقات', data: dataLevel, backgroundColor: '#3b82f6', borderRadius: 4 }] },
-            options: { maintainAspectRatio: false, responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a1a1aa' }, grid: { color: '#27272a' } }, x: { ticks: { color: '#a1a1aa' }, grid: { display: false } } } }
+            data: { labels: labelsLevel, datasets: [{ label: 'البطاقات', data: dataLevel, backgroundColor: '#FF3D00', borderRadius: 0 }] },
+            options: { maintainAspectRatio: false, responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a1a1aa' }, grid: { color: '#262626' } }, x: { ticks: { color: '#a1a1aa' }, grid: { display: false } } } }
         });
 
         if(chartGold) chartGold.destroy();
-        chartGold = new Chart(document.getElementById('goldChart'), { type: 'pie', data: { labels: ['الذهب المنفق', 'الذهب المتبقي'], datasets: [{ data: [spent, rem], backgroundColor: ['#facc15', '#27272a'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'تقدم الذهب', color: '#f4f4f5' }, legend: { display: false } } } });
+        chartGold = new Chart(document.getElementById('goldChart'), { type: 'pie', data: { labels: ['الذهب المنفق', 'الذهب المتبقي'], datasets: [{ data: [spent, rem], backgroundColor: ['#FF3D00', '#262626'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'تقدم الذهب', color: '#f4f4f5' }, legend: { display: false } } } });
         
         if(chartCards) chartCards.destroy();
-        chartCards = new Chart(document.getElementById('cardsChart'), { type: 'doughnut', data: { labels: ['المجمّع', 'مفقود عادية', 'مفقود نادرة', 'مفقود ممتازة', 'مفقود أسطورية', 'مفقود أبطال'], datasets: [{ data: [cardCollTotal, missingByRarity.common, missingByRarity.rare, missingByRarity.epic, missingByRarity.legendary, missingByRarity.champion], backgroundColor: ['#3b82f6', '#94a3b8', '#f97316', '#a855f7', '#06b6d4', '#facc15'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'مجموعة البطاقات', color: '#f4f4f5' }, legend: { display: false } }, cutout: '65%' } });
+        chartCards = new Chart(document.getElementById('cardsChart'), { type: 'doughnut', data: { labels: ['المجمّع', 'مفقود عادية', 'مفقود نادرة', 'مفقود ممتازة', 'مفقود أسطورية', 'مفقود أبطال'], datasets: [{ data: [cardCollTotal, missingByRarity.common, missingByRarity.rare, missingByRarity.epic, missingByRarity.legendary, missingByRarity.champion], backgroundColor: ['#FF3D00', '#94a3b8', '#f97316', '#a855f7', '#06b6d4', '#facc15'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'مجموعة البطاقات', color: '#f4f4f5' }, legend: { display: false } }, cutout: '65%' } });
         
-        // رحلة الملك - تعتمد على المستويات
         if(chartXp) chartXp.destroy();
         let currentLevel = currentExpLvl;
         let maxLevel = 90;
         let levelsCompleted = currentLevel - 1;
         let levelsRemaining = maxLevel - currentLevel;
-
         chartXp = new Chart(document.getElementById('xpChart'), {
             type: 'doughnut',
-            data: {
-                labels: ['مستويات مكتملة', 'مستويات متبقية'],
-                datasets: [{
-                    data: [levelsCompleted, levelsRemaining],
-                    backgroundColor: ['#a855f7', '#27272a'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: `المستوى ${currentLevel} من ${maxLevel}`,
-                        color: '#f4f4f5',
-                        font: { size: 14, weight: 'bold' }
-                    },
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.label || '';
-                                let value = context.raw || 0;
-                                return `${label}: ${value} مستوى`;
-                            }
-                        }
-                    }
-                },
-                cutout: '65%'
-            }
+            data: { labels: ['مستويات مكتملة', 'مستويات متبقية'], datasets: [{ data: [levelsCompleted, levelsRemaining], backgroundColor: ['#FF3D00', '#262626'], borderWidth: 0 }] },
+            options: { maintainAspectRatio: false, plugins: { title: { display: true, text: `المستوى ${currentLevel} من ${maxLevel}`, color: '#f4f4f5', font: { size: 14, weight: 'bold' } }, legend: { display: false } }, cutout: '65%' }
         });
 
         renderMainTable();
@@ -788,16 +783,16 @@ function renderMainTable() {
     let hasTowersInCurrentFilter = filteredResults.some(r => r.isTower);
 
     filteredResults.forEach(r => {
-        let newCategoryKey = ""; let shouldPrintLabel = false; let labelText = ""; let labelColor = "var(--text-main)";
+        let newCategoryKey = ""; let shouldPrintLabel = false; let labelText = ""; let labelColor = "var(--foreground)";
 
         if (currentActiveFilter === 'all') {
             newCategoryKey = r.isTower ? "all_towers" : r.rarityKey;
             if (newCategoryKey !== currentCategoryKey) {
                 shouldPrintLabel = true;
-                if (newCategoryKey === "all_towers") { labelText = "قوات الأبراج"; labelColor = "var(--accent-red)"; }
-                else if (r.rarityKey === "champion") { labelText = "الأبطال"; labelColor = "var(--accent-gold)"; }
+                if (newCategoryKey === "all_towers") { labelText = "قوات الأبراج"; labelColor = "var(--accent)"; }
+                else if (r.rarityKey === "champion") { labelText = "الأبطال"; labelColor = "var(--accent)"; }
                 else if (r.rarityKey === "legendary") { labelText = "أسطورية"; labelColor = "#00cec9"; }
-                else if (r.rarityKey === "epic") { labelText = "ممتازة"; labelColor = "var(--accent-purple)"; }
+                else if (r.rarityKey === "epic") { labelText = "ممتازة"; labelColor = "var(--accent)"; }
                 else if (r.rarityKey === "rare") { labelText = "نادرة"; labelColor = "#e67e22"; }
                 else if (r.rarityKey === "common") { labelText = "عادية"; labelColor = "#bdc3c7"; }
             }
@@ -807,12 +802,12 @@ function renderMainTable() {
             if (newCategoryKey !== currentCategoryKey && hasTowersInCurrentFilter) {
                 shouldPrintLabel = true; let rarityDisplay = r.rarity === "common" ? "عادية" : (r.rarity === "rare" ? "نادرة" : (r.rarity === "epic" ? "ممتازة" : (r.rarity === "legendary" ? "أسطورية" : "بطل")));
                 labelText = r.isTower ? `أبراج ${rarityDisplay}` : `قوات وتعاويذ ${rarityDisplay}`;
-                if (r.rarityKey === "champion") labelColor = "var(--accent-gold)";
+                if (r.rarityKey === "champion") labelColor = "var(--accent)";
                 else if (r.rarityKey === "legendary") labelColor = "#00cec9";
-                else if (r.rarityKey === "epic") labelColor = "var(--accent-purple)";
+                else if (r.rarityKey === "epic") labelColor = "var(--accent)";
                 else if (r.rarityKey === "rare") labelColor = "#e67e22";
                 else if (r.rarityKey === "common") labelColor = "#bdc3c7";
-                if (r.isTower) labelColor = "var(--accent-red)"; 
+                if (r.isTower) labelColor = "var(--accent)"; 
             }
         }
 
@@ -822,10 +817,10 @@ function renderMainTable() {
         let isElite = (r.actualLvl === MAX_LEVEL);
         let rowClass = isElite ? "class='elite-max-row'" : "";
         let nameStyle = isElite ? "class='elite-text'" : "";
-        let rarityColor = r.rarityKey==='epic' ? 'var(--accent-purple)' : r.rarityKey==='legendary' ? '#00cec9' : r.rarityKey==='champion' ? 'var(--accent-gold)' : r.rarityKey==='rare' ? '#e67e22' : '#bdc3c7';
+        let rarityColor = r.rarityKey==='epic' ? 'var(--accent)' : r.rarityKey==='legendary' ? '#00cec9' : r.rarityKey==='champion' ? 'var(--accent)' : r.rarityKey==='rare' ? '#e67e22' : '#bdc3c7';
         let isLockedClass = (r.status === "غير مملوك") ? "locked-card" : "";
         
-        let displayPctNext = r.status === "غير مملوك" ? "-" : getProgressBar(r.pctToNext, r.pctToNext >= 1 ? '#22c55e' : '#3b82f6');
+        let displayPctNext = r.status === "غير مملوك" ? "-" : getProgressBar(r.pctToNext, r.pctToNext >= 1 ? '#22c55e' : '#FF3D00');
         let displayPctMax = r.status === "غير مملوك" ? "-" : getProgressBar(r.pctToMax, isElite ? '#d946ef' : '#facc15');
 
         tableHTML += `<tr ${rowClass} data-rarity="${r.rarityKey}" data-istower="${r.isTower}">
@@ -838,7 +833,7 @@ function renderMainTable() {
         for (let i = startTargetLvl; i <= MAX_LEVEL; i++) {
             let missing = r.missingLevels[i] || 0;
             if (r.actualLvl >= i) tableHTML += `<td style="color:var(--border-color)" class="${isLockedClass}">-</td>`;
-            else if (missing === 0) tableHTML += `<td class="${isLockedClass}"><i class="fa-solid fa-check" style="color:var(--accent-green)"></i></td>`;
+            else if (missing === 0) tableHTML += `<td class="${isLockedClass}"><i class="fa-solid fa-check" style="color:var(--accent)"></i></td>`;
             else tableHTML += `<td class="red-text ${isLockedClass}">${missing.toLocaleString()}</td>`;
         }
         tableHTML += `<td class="green-text ${isLockedClass}">${r.spent.toLocaleString()}</td><td class="gold-text ${isLockedClass}">${r.rem.toLocaleString()}</td></tr>`;
