@@ -5,14 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="google" content="notranslate">
     <title>Clash Royale Tracker</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Bold Typography System -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+
+    <div class="noise-overlay"></div>
+
     <div class="container">
         <header>
             <h1><i class="fa-solid fa-crown"></i> Clash Royale <span>Tracker</span></h1>
@@ -39,7 +41,6 @@
                 <button class="tab-btn" onclick="openTab('mainTable')">قاعدة البطاقات</button>
             </div>
 
-            <!-- Overview Tab -->
             <div id="overview" class="tab-content active">
                 <div class="card">
                     <div class="card-header"><i class="fa-solid fa-user"></i> الملف الشخصي</div>
@@ -108,7 +109,6 @@
                 </div>
             </div>
 
-            <!-- Cards Table Tab -->
             <div id="mainTable" class="tab-content">
                 <div class="filter-row">
                     <button class="filter-btn active" onclick="filterCards('all')">الكل</button>
@@ -125,7 +125,7 @@
                 </div>
             </div>
         </div>
-        <footer style="text-align: center; padding: 8px 0; margin-top: 24px; font-size: 11px; color: rgba(255,255,255,0.2); border-top: 1px solid rgba(255,255,255,0.05);">
+        <footer>
             المطور الأساسي: anaswah | المُحسن: LiM7mod (Discord: _.m6)
         </footer>
     </div>
